@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,38 +9,49 @@
     .flash { font-size: 2em; text-align: center; margin: 40px; color: #0ff; }
     .missed { color: red; font-weight: bold; }
     .definition { font-style: italic; }
+    .not-ok { background-color: #330000; }
   </style>
 </head>
 <body class="p-4">
   <div class="container">
-    <div id="progress" class="my-3"></div>
+    <div class="progress my-3">
+      <div id="progress-bar" class="progress-bar" style="width: 0%">0/0</div>
+    </div>
     <div id="flash" class="flash"></div>
     <input class="form-control" type="text" id="guess" placeholder="What did you see?" />
     <button class="btn btn-success mt-2" onclick="checkGuess()">Submit Guess</button>
     <div id="feedback" class="mt-2"></div>
     <button class="btn btn-secondary mt-2" onclick="nextWord()">Next</button>
+    <div id="summary" class="mt-4"></div>
   </div>
   <script>
-    let words = [];
-    let currentIndex = 0;
-    let userData = JSON.parse(localStorage.getItem('userData'));
-    let displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
-    let wordResults = [];
+    let words = [], currentIndex = 0, wordResults = [];
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+    const maxWords = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
+
+    const stopWords = new Set(["the","is","in","at","which","on","and","a","an","to","of","for","with","by","as","from","that","this","these","those","it","its","be","are","was","were","has","have","had","but","or","if","then","so","also"]);
 
     const rawWords = userData.struggle.match(/\b\w+\b/g);
-    const uniqueWords = [...new Set(rawWords)].filter(w => w.length > 2);
-    const max = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
-    words = uniqueWords.sort(() => 0.5 - Math.random()).slice(0, Math.min(max, Math.ceil(uniqueWords.length * 0.2)));
+    const filteredWords = [...new Set(rawWords.map(w => w.toLowerCase()))].filter(w => w.length > 2 && !stopWords.has(w));
+    words = filteredWords.sort(() => 0.5 - Math.random()).slice(0, Math.min(maxWords, Math.ceil(filteredWords.length * 0.2)));
 
     function showWord() {
       if (currentIndex >= words.length) {
-        document.getElementById('feedback').innerHTML = '<h4>Session Complete</h4>';
-        return;
+        return showSummary();
       }
+      updateProgress();
       document.getElementById('flash').textContent = words[currentIndex];
       setTimeout(() => {
         document.getElementById('flash').textContent = '';
       }, displayTime);
+    }
+
+    function updateProgress() {
+      const bar = document.getElementById('progress-bar');
+      const percent = (currentIndex / words.length) * 100;
+      bar.style.width = percent + '%';
+      bar.textContent = `${currentIndex}/${words.length}`;
     }
 
     function checkGuess() {
@@ -57,6 +67,7 @@
             const meaning = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
             document.getElementById('feedback').innerHTML = `Wrong! <span class='missed'>${correctWord}</span>: <span class='definition'>${meaning}</span>`;
           });
+        wordResults.push({ word: correctWord, status: 'Not OK' });
       }
     }
 
@@ -65,6 +76,17 @@
       document.getElementById('guess').value = '';
       document.getElementById('feedback').innerHTML = '';
       showWord();
+    }
+
+    function showSummary() {
+      const summary = document.getElementById('summary');
+      let html = '<h4>Session Complete</h4><table class="table table-bordered"><thead><tr><th>Word</th><th>Status</th></tr></thead><tbody>';
+      wordResults.forEach(result => {
+        const rowClass = result.status === 'Not OK' ? 'not-ok' : '';
+        html += `<tr class='${rowClass}'><td>${result.word}</td><td>${result.status}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      summary.innerHTML = html;
     }
 
     showWord();
