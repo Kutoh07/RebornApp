@@ -117,13 +117,13 @@
     let wordResults = [];
 
     const stopWords = [
-      'the', 'is', 'in', 'at', 'which', 'on', 'and', 'a', 'an', 'to', 'of', 'for', 'with', 'by', 'as', 'from', 'that', 'this', 'these', 'those', 'it', 'its', 'be', 'are', 'was', 'were', 'has', 'have', 'had', 'but', 'or', 'if', 'then', 'so', 'such', 'also'
+      'the','is','in','at','which','on','and','a','an','to','of','for','with','by','as','from','that','this','these','those','it','its','be','are','was','were','has','have','had','but','or','if','then','so','such','also'
     ];
 
     const dictionary = {
       "struggle": "to try very hard to do something difficult",
       "emotion": "a strong feeling such as love or anger",
-      "anxiety": "a feeling of worry or nervousness",
+      "anxiety": "a feeling of worry or nervousness"
     };
 
     for (let i = 10; i <= 100; i++) {
@@ -139,14 +139,23 @@
       return 500;
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const text = document.getElementById('struggle').value;
       const level = document.getElementById('confidence').value;
       displayTime = getDisplayTime(level);
-      let words = text.match(/\b(\w+)\b/g);
-      words = [...new Set(words.map(w => w.toLowerCase()).filter(w => !stopWords.includes(w)))];
-      selectedWords = words.sort(() => 0.5 - Math.random()).slice(0, 20);
+
+      const confidenceLimits = { low: 10, medium: 15, high: 20 };
+      const maxWords = confidenceLimits[level];
+
+      const words = text.match(/\b(\w+)\b/g).map(w => w.toLowerCase());
+      const filteredWords = [...new Set(words)].filter(w => !stopWords.includes(w));
+
+      const strongWords = filteredWords.filter(w => !/^(the|and|to|of|in|a|is|it|for|on|with|as|by|at|be|an|from|this|that)$/.test(w));
+
+      const numberToSelect = Math.min(maxWords, Math.ceil(strongWords.length * 0.2));
+      selectedWords = strongWords.sort(() => 0.5 - Math.random()).slice(0, numberToSelect);
+
       wordResults = [];
       currentIndex = 0;
       form.parentElement.classList.add('is-hidden');
@@ -185,11 +194,21 @@
           showWord();
         }, 1000);
       } else {
-        const meaning = dictionary[originalWord] || 'Definition not available.';
-        feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: ${meaning}`;
-        wordResults.push({ word: originalWord, status: 'Not OK' });
-        userGuess.disabled = true;
-        nextBtn.classList.remove('is-hidden');
+        fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${originalWord}`)
+          .then(res => res.json())
+          .then(data => {
+            const definition = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
+            feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: ${definition}`;
+            wordResults.push({ word: originalWord, status: 'Not OK' });
+            userGuess.disabled = true;
+            nextBtn.classList.remove('is-hidden');
+          })
+          .catch(() => {
+            feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: Definition not available.`;
+            wordResults.push({ word: originalWord, status: 'Not OK' });
+            userGuess.disabled = true;
+            nextBtn.classList.remove('is-hidden');
+          });
       }
     }
 
