@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Meaning Explorer</title>
+  <style>
+    body {
+      font-family: monospace;
+      background-color: #111;
+      color: #0f0;
+      padding: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    .flash {
+      font-size: 2em;
+      color: #0ff;
+      text-align: center;
+      margin: 40px;
+    }
+    input, textarea, button {
+      background-color: #000;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 5px;
+      margin: 5px 0;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="form-section">
+    <h2>Welcome! Let's understand your words.</h2>
+    <form id="userForm">
+      <label>Name:</label>
+      <input type="text" id="name" required />
+      <label>Age:</label>
+      <input type="number" id="age" required />
+      <label>Sex:</label>
+      <input type="text" id="sex" required />
+      <label>Your current struggle:</label>
+      <textarea id="struggle" rows="4" required></textarea>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <div id="flash-section" class="hidden">
+    <div id="flash-word" class="flash"></div>
+    <input type="text" id="userGuess" placeholder="What did you see?" />
+    <button onclick="submitGuess()">Submit Guess</button>
+    <div id="feedback"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('userForm');
+    const flashSection = document.getElementById('flash-section');
+    const flashWord = document.getElementById('flash-word');
+    const userGuess = document.getElementById('userGuess');
+    const feedback = document.getElementById('feedback');
+
+    let selectedWords = [];
+    let currentIndex = 0;
+
+    const dictionary = {
+      "struggle": "to try very hard to do something difficult",
+      "emotion": "a strong feeling such as love or anger",
+      "anxiety": "a feeling of worry or nervousness",
+      // Add more definitions as needed
+    };
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = document.getElementById('struggle').value;
+      let words = text.match(/\b(\w+)\b/g);
+      words = [...new Set(words)];
+      selectedWords = words.sort(() => 0.5 - Math.random()).slice(0, 20);
+      form.parentElement.classList.add('hidden');
+      flashSection.classList.remove('hidden');
+      showWord();
+    });
+
+    function showWord() {
+      if (currentIndex >= selectedWords.length) {
+        flashWord.textContent = 'Done!';
+        userGuess.classList.add('hidden');
+        return;
+      }
+      flashWord.textContent = selectedWords[currentIndex];
+      setTimeout(() => {
+        flashWord.textContent = '';
+        userGuess.value = '';
+        userGuess.focus();
+      }, 1500);
+    }
+
+    function submitGuess() {
+      const userInput = userGuess.value.trim().toLowerCase();
+      const originalWord = selectedWords[currentIndex].toLowerCase();
+      if (userInput === originalWord) {
+        feedback.textContent = 'Correct!';
+      } else {
+        const meaning = dictionary[originalWord] || 'Definition not available.';
+        feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: ${meaning}`;
+      }
+      currentIndex++;
+      setTimeout(() => {
+        feedback.textContent = '';
+        showWord();
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
