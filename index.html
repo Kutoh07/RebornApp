@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to your new life</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: none;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    }
+    .form-control, .form-select {
+      border-radius: 12px;
+      border: 2px solid #e9ecef;
+      transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .btn-primary {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 12px;
+      padding: 12px 30px;
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    .input-group-text {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 12px 0 0 12px;
+    }
+    .title-gradient {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body p-5">
+            <h2 class="text-center mb-3 title-gradient fw-bold">Welcome to your new life</h2>
+            <p class="text-center text-muted mb-4">This app will help you use your past and your present to reborn the true you and unlock your full potential</p>
+            
+            <form onsubmit="storeData(); return false;">
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">🌐 Language</label>
+                  <select class="form-select" id="language">
+                    <option value="en">🇺🇸 English</option>
+                    <option value="fr">🇫🇷 French</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">🏳️ Country</label>
+                  <select class="form-select" id="country">
+                    <option value="">Loading countries...</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Name</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                    <input class="form-control" type="text" id="name" placeholder="Enter your name" required>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Age</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar-fill"></i></span>
+                    <select class="form-select" id="age">
+                      <script>
+                        for (let i = 10; i <= 100; i++) {
+                          document.write('<option value="' + i + '">' + i + '</option>');
+                        }
+                      </script>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Sex</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-gender-ambiguous"></i></span>
+                    <select class="form-select" id="sex">
+                      <option value="man">Man</option>
+                      <option value="woman">Woman</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mb-4">
+                <div class="col-md-9">
+                  <label class="form-label fw-semibold">Describe your struggle</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-chat-text-fill"></i></span>
+                    <textarea class="form-control" id="struggle" rows="4" placeholder="Share your thoughts and struggles here..." required></textarea>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Confidence Level</label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-speedometer2"></i></span>
+                    <select class="form-select" id="confidence">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-center">
+                <button class="btn btn-primary btn-lg">
+                  <i class="bi bi-arrow-right-circle me-2"></i>Continue to Game
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load countries from REST Countries API
+    async function loadCountries() {
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flag,cca2');
+        const countries = await response.json();
+        
+        const countrySelect = document.getElementById('country');
+        countrySelect.innerHTML = '<option value="">Select a country</option>';
+        
+        countries
+          .sort((a, b) => a.name.common.localeCompare(b.name.common))
+          .forEach(country => {
+            const option = document.createElement('option');
+            option.value = country.cca2;
+            option.textContent = `${country.flag} ${country.name.common}`;
+            countrySelect.appendChild(option);
+          });
+      } catch (error) {
+        console.error('Error loading countries:', error);
+        const countrySelect = document.getElementById('country');
+        countrySelect.innerHTML = `
+          <option value="US">🇺🇸 United States</option>
+          <option value="FR">🇫🇷 France</option>
+          <option value="DE">🇩🇪 Germany</option>
+          <option value="GB">🇬🇧 United Kingdom</option>
+          <option value="CA">🇨🇦 Canada</option>
+        `;
+      }
+    }
+
+    function storeData() {
+      const data = {
+        language: document.getElementById('language').value,
+        country: document.getElementById('country').value,
+        name: document.getElementById('name').value,
+        age: document.getElementById('age').value,
+        sex: document.getElementById('sex').value,
+        confidence: document.getElementById('confidence').value,
+        struggle: document.getElementById('struggle').value,
+      };
+      
+      if (!data.country) {
+        alert('Please select a country');
+        return;
+      }
+      
+      localStorage.setItem('userData', JSON.stringify(data));
+      window.location.href = 'guess.html';
+    }
+
+    // Load countries when page loads
+    loadCountries();
+  </script>
+</body>
+</html>
