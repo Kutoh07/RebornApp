@@ -4,29 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome to your new life</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
   <style>
     body {
-      font-family: monospace;
       background-color: #111;
       color: #0f0;
-      padding: 20px;
-    }
-    .hidden {
-      display: none;
     }
     .flash {
       font-size: 2em;
       color: #0ff;
       text-align: center;
       margin: 40px;
-    }
-    input, select, textarea, button {
-      background-color: #000;
-      color: #0f0;
-      border: 1px solid #0f0;
-      padding: 5px;
-      margin: 5px 0;
-      width: 100%;
     }
     .progress-bar {
       width: 100%;
@@ -41,50 +29,76 @@
     table {
       width: 100%;
       margin-top: 20px;
-      border-collapse: collapse;
     }
     th, td {
       border: 1px solid #0f0;
       padding: 8px;
       text-align: center;
+      color: #0f0;
     }
   </style>
 </head>
-<body>
-  <div id="form-section">
-    <h2>Welcome to your new life</h2>
+<body class="section">
+  <div id="form-section" class="container">
+    <h2 class="title has-text-success">Welcome to your new life</h2>
     <p>This app will help you use your past and your present to reborn the true you and bring yourself to know who you are and unlock the full potential of your mind</p>
     <form id="userForm">
-      <label>Name:</label>
-      <input type="text" id="name" required />
-      <label>Age:</label>
-      <select id="age" required></select>
-      <label>Sex:</label>
-      <select id="sex" required>
-        <option>Man</option>
-        <option>Woman</option>
-      </select>
-      <label>Level of confidence:</label>
-      <select id="confidence" required>
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </select>
-      <label>Your current struggle:</label>
-      <textarea id="struggle" rows="4" required></textarea>
-      <button type="submit">Submit</button>
+      <div class="field">
+        <label class="label">Name:</label>
+        <div class="control">
+          <input class="input" type="text" id="name" required />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Age:</label>
+        <div class="control">
+          <div class="select">
+            <select id="age" required></select>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Sex:</label>
+        <div class="control">
+          <div class="select">
+            <select id="sex" required>
+              <option>Man</option>
+              <option>Woman</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Level of confidence:</label>
+        <div class="control">
+          <div class="select">
+            <select id="confidence" required>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Your current struggle:</label>
+        <div class="control">
+          <textarea class="textarea" id="struggle" rows="4" required></textarea>
+        </div>
+      </div>
+      <button class="button is-link" type="submit">Submit</button>
     </form>
   </div>
 
-  <div id="flash-section" class="hidden">
+  <div id="flash-section" class="container is-hidden">
     <div class="progress-bar"><div id="progress" class="progress"></div></div>
     <div id="flash-word" class="flash"></div>
-    <input type="text" id="userGuess" placeholder="What did you see?" />
-    <button onclick="submitGuess()">Submit Guess</button>
-    <div id="feedback"></div>
-    <button onclick="goBack()">Return</button>
-    <button id="nextBtn" onclick="nextWord()" class="hidden">Next</button>
-    <div id="summary" class="hidden"></div>
+    <input class="input" type="text" id="userGuess" placeholder="What did you see?" />
+    <button class="button is-success mt-2" onclick="submitGuess()">Submit Guess</button>
+    <div id="feedback" class="mt-2"></div>
+    <button class="button is-warning mt-2" onclick="goBack()">Return</button>
+    <button id="nextBtn" class="button is-info mt-2 is-hidden" onclick="nextWord()">Next</button>
+    <div id="summary" class="mt-4 is-hidden"></div>
   </div>
 
   <script>
@@ -101,6 +115,10 @@
     let currentIndex = 0;
     let displayTime = 1500;
     let wordResults = [];
+
+    const stopWords = [
+      'the', 'is', 'in', 'at', 'which', 'on', 'and', 'a', 'an', 'to', 'of', 'for', 'with', 'by', 'as', 'from', 'that', 'this', 'these', 'those', 'it', 'its', 'be', 'are', 'was', 'were', 'has', 'have', 'had', 'but', 'or', 'if', 'then', 'so', 'such', 'also'
+    ];
 
     const dictionary = {
       "struggle": "to try very hard to do something difficult",
@@ -127,18 +145,18 @@
       const level = document.getElementById('confidence').value;
       displayTime = getDisplayTime(level);
       let words = text.match(/\b(\w+)\b/g);
-      words = [...new Set(words)];
+      words = [...new Set(words.map(w => w.toLowerCase()).filter(w => !stopWords.includes(w)))];
       selectedWords = words.sort(() => 0.5 - Math.random()).slice(0, 20);
       wordResults = [];
       currentIndex = 0;
-      form.parentElement.classList.add('hidden');
-      flashSection.classList.remove('hidden');
+      form.parentElement.classList.add('is-hidden');
+      flashSection.classList.remove('is-hidden');
       showWord();
     });
 
     function goBack() {
-      flashSection.classList.add('hidden');
-      document.getElementById('form-section').classList.remove('hidden');
+      flashSection.classList.add('is-hidden');
+      document.getElementById('form-section').classList.remove('is-hidden');
     }
 
     function showWord() {
@@ -171,29 +189,29 @@
         feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: ${meaning}`;
         wordResults.push({ word: originalWord, status: 'Not OK' });
         userGuess.disabled = true;
-        nextBtn.classList.remove('hidden');
+        nextBtn.classList.remove('is-hidden');
       }
     }
 
     function nextWord() {
       userGuess.disabled = false;
       feedback.textContent = '';
-      nextBtn.classList.add('hidden');
+      nextBtn.classList.add('is-hidden');
       currentIndex++;
       showWord();
     }
 
     function showSummary() {
       flashWord.textContent = 'Session Complete!';
-      userGuess.classList.add('hidden');
-      feedback.classList.add('hidden');
-      let html = '<table><tr><th>Word</th><th>Status</th></tr>';
+      userGuess.classList.add('is-hidden');
+      feedback.classList.add('is-hidden');
+      let html = '<table class="table is-bordered is-striped"><thead><tr><th>Word</th><th>Status</th></tr></thead><tbody>';
       wordResults.forEach(w => {
         html += `<tr><td>${w.word}</td><td>${w.status}</td></tr>`;
       });
-      html += '</table>';
+      html += '</tbody></table>';
       summary.innerHTML = html;
-      summary.classList.remove('hidden');
+      summary.classList.remove('is-hidden');
     }
   </script>
 </body>
