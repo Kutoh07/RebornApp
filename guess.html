@@ -9,51 +9,80 @@
     .flash { font-size: 2em; text-align: center; margin: 40px; color: #0ff; }
     .missed { color: red; font-weight: bold; }
     .definition { font-style: italic; }
-    .not-ok { background-color: #330000; }
-    .question-mark { font-size: 3em; color: #ff0; text-align: center; animation: bounce 1s infinite; display: none; }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+    .question-mark {
+      font-size: 5em;
+      text-align: center;
+      margin: 20px;
+      animation: pulse 1s infinite alternate;
+      color: #ff0;
     }
+    @keyframes pulse {
+      from { transform: scale(1); opacity: 0.7; }
+      to { transform: scale(1.2); opacity: 1; }
+    }
+    .results-table { width: 100%; margin-top: 20px; }
+    .results-table th { background-color: #333; color: #0f0; }
+    .results-table td { padding: 8px; border-bottom: 1px solid #444; }
+    .not-ok { color: red; }
   </style>
 </head>
 <body class="p-4">
   <div class="container">
-    <div class="progress my-3">
-      <div id="progress-bar" class="progress-bar" style="width: 0%">0/0</div>
-    </div>
+    <div id="progress" class="my-3"></div>
     <div id="flash" class="flash"></div>
-    <div id="question" class="question-mark">?</div>
+    <div id="questionMark" class="question-mark" style="display: none;">?</div>
     <input class="form-control" type="text" id="guess" placeholder="What did you see?" />
     <button class="btn btn-success mt-2" onclick="checkGuess()">Submit Guess</button>
     <div id="feedback" class="mt-2"></div>
-    <div id="summary" class="mt-4"></div>
+    <button class="btn btn-secondary mt-2" onclick="nextWord()">Next</button>
+    <div id="results"></div>
   </div>
   <script>
-    let words = [], currentIndex = 0, wordResults = [];
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    const displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
-    const maxWords = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
-    const stopWords = new Set(["the","is","in","at","which","on","and","a","an","to","of","for","with","by","as","from","that","this","these","those","it","its","be","are","was","were","has","have","had","but","or","if","then","so","also"]);
+    let words = [];
+    let currentIndex = 0;
+    let userData = JSON.parse(localStorage.getItem('userData'));
+    let displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+    let wordResults = [];
 
-    const rawWords = userData.struggle.match(/\b\w+\b/g);
-    const filteredWords = [...new Set(rawWords.map(w => w.toLowerCase()))].filter(w => w.length > 2 && !stopWords.has(w));
-    words = filteredWords.sort(() => 0.5 - Math.random()).slice(0, Math.min(maxWords, Math.ceil(filteredWords.length * 0.2)));
+    // Function to filter out less meaningful words (articles, prepositions, etc.)
+    function filterMeaningfulWords(wordList) {
+      const meaninglessWords = [
+        'a', 'an', 'the', 'and', 'or', 'but', 'of', 'to', 'in', 'on', 'at', 
+        'for', 'with', 'by', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 
+        'have', 'has', 'had', 'do', 'does', 'did', 'this', 'that', 'these', 'those'
+      ];
+      
+      return wordList.filter(word => {
+        const lowerWord = word.toLowerCase();
+        // Keep words longer than 2 characters and not in our meaningless list
+        return word.length > 2 && !meaninglessWords.includes(lowerWord);
+      });
+    }
+
+    const rawWords = userData.struggle.match(/\b\w+\b/g) || [];
+    const uniqueWords = [...new Set(rawWords)];
+    const meaningfulWords = filterMeaningfulWords(uniqueWords);
+    const max = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
+    words = meaningfulWords.sort(() => 0.5 - Math.random())
+              .slice(0, Math.min(max, Math.ceil(meaningfulWords.length * 0.2)));
 
     function updateProgress() {
-      const bar = document.getElementById('progress-bar');
-      const percent = (currentIndex / words.length) * 100;
-      bar.style.width = percent + '%';
-      bar.textContent = `${currentIndex}/${words.length}`;
+      const correctCount = wordResults.filter(r => r.status === 'OK').length;
+      document.getElementById('progress').innerHTML = 
+        `Progress: ${correctCount + wordResults.filter(r => r.status === 'Not OK').length}/${words.length}`;
     }
 
     function showWord() {
-      if (currentIndex >= words.length) return showSummary();
+      if (currentIndex >= words.length) {
+        document.getElementById('feedback').innerHTML = '<h4>Session Complete</h4>';
+        showResults();
+        return;
+      }
       document.getElementById('flash').textContent = words[currentIndex];
-      document.getElementById('question').style.display = 'none';
+      document.getElementById('questionMark').style.display = 'none';
       setTimeout(() => {
         document.getElementById('flash').textContent = '';
-        document.getElementById('question').style.display = 'block';
+        document.getElementById('questionMark').style.display = 'block';
       }, displayTime);
     }
 
@@ -64,36 +93,42 @@
         wordResults.push({ word: correctWord, status: 'OK' });
         document.getElementById('feedback').innerHTML = '<span class="text-success">Correct!</span>';
       } else {
+        wordResults.push({ word: correctWord, status: 'Not OK' });
         fetch(`https://api.dictionaryapi.dev/api/v2/entries/${userData.language}/${correctWord}`)
           .then(res => res.json())
           .then(data => {
             const meaning = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
             document.getElementById('feedback').innerHTML = `Wrong! <span class='missed'>${correctWord}</span>: <span class='definition'>${meaning}</span>`;
+          })
+          .catch(() => {
+            document.getElementById('feedback').innerHTML = `Wrong! The word was: <span class='missed'>${correctWord}</span>`;
           });
-        wordResults.push({ word: correctWord, status: 'Not OK' });
       }
+      updateProgress();
+    }
+
+    function nextWord() {
       currentIndex++;
       document.getElementById('guess').value = '';
-      document.getElementById('question').style.display = 'none';
-      updateProgress();
-      if (currentIndex < words.length) {
-        setTimeout(showWord, 500);
-      } else {
-        showSummary();
-      }
+      document.getElementById('feedback').innerHTML = '';
+      showWord();
     }
 
-    function showSummary() {
-      const summary = document.getElementById('summary');
-      let html = '<h4>Session Complete</h4><table class="table table-bordered"><thead><tr><th>Word</th><th>Status</th></tr></thead><tbody>';
+    function showResults() {
+      let html = '<h3 class="mt-4">Results</h3>';
+      html += '<table class="results-table">';
+      html += '<tr><th>Word</th><th>Status</th></tr>';
+      
       wordResults.forEach(result => {
-        const rowClass = result.status === 'Not OK' ? 'not-ok' : '';
-        html += `<tr class='${rowClass}'><td>${result.word}</td><td>${result.status}</td></tr>`;
+        const rowClass = result.status === 'Not OK' ? 'class="not-ok"' : '';
+        html += `<tr ${rowClass}><td>${result.word}</td><td>${result.status}</td></tr>`;
       });
-      html += '</tbody></table>';
-      summary.innerHTML = html;
+      
+      html += '</table>';
+      document.getElementById('results').innerHTML = html;
     }
 
+    updateProgress();
     showWord();
   </script>
 </body>
