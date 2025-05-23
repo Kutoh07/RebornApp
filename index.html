@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Word Meaning Explorer</title>
+  <title>Welcome to your new life</title>
   <style>
     body {
       font-family: monospace;
@@ -20,7 +20,7 @@
       text-align: center;
       margin: 40px;
     }
-    input, textarea, button {
+    input, select, textarea, button {
       background-color: #000;
       color: #0f0;
       border: 1px solid #0f0;
@@ -28,18 +28,48 @@
       margin: 5px 0;
       width: 100%;
     }
+    .progress-bar {
+      width: 100%;
+      background-color: #222;
+      margin-top: 10px;
+    }
+    .progress {
+      height: 20px;
+      background-color: #0f0;
+      width: 0%;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #0f0;
+      padding: 8px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <div id="form-section">
-    <h2>Welcome! Let's understand your words.</h2>
+    <h2>Welcome to your new life</h2>
+    <p>This app will help you use your past and your present to reborn the true you and bring yourself to know who you are and unlock the full potential of your mind</p>
     <form id="userForm">
       <label>Name:</label>
       <input type="text" id="name" required />
       <label>Age:</label>
-      <input type="number" id="age" required />
+      <select id="age" required></select>
       <label>Sex:</label>
-      <input type="text" id="sex" required />
+      <select id="sex" required>
+        <option>Man</option>
+        <option>Woman</option>
+      </select>
+      <label>Level of confidence:</label>
+      <select id="confidence" required>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
       <label>Your current struggle:</label>
       <textarea id="struggle" rows="4" required></textarea>
       <button type="submit">Submit</button>
@@ -47,10 +77,14 @@
   </div>
 
   <div id="flash-section" class="hidden">
+    <div class="progress-bar"><div id="progress" class="progress"></div></div>
     <div id="flash-word" class="flash"></div>
     <input type="text" id="userGuess" placeholder="What did you see?" />
     <button onclick="submitGuess()">Submit Guess</button>
     <div id="feedback"></div>
+    <button onclick="goBack()">Return</button>
+    <button id="nextBtn" onclick="nextWord()" class="hidden">Next</button>
+    <div id="summary" class="hidden"></div>
   </div>
 
   <script>
@@ -59,40 +93,66 @@
     const flashWord = document.getElementById('flash-word');
     const userGuess = document.getElementById('userGuess');
     const feedback = document.getElementById('feedback');
+    const nextBtn = document.getElementById('nextBtn');
+    const progress = document.getElementById('progress');
+    const summary = document.getElementById('summary');
 
     let selectedWords = [];
     let currentIndex = 0;
+    let displayTime = 1500;
+    let wordResults = [];
 
     const dictionary = {
       "struggle": "to try very hard to do something difficult",
       "emotion": "a strong feeling such as love or anger",
       "anxiety": "a feeling of worry or nervousness",
-      // Add more definitions as needed
     };
+
+    for (let i = 10; i <= 100; i++) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.innerText = i;
+      document.getElementById('age').appendChild(opt);
+    }
+
+    function getDisplayTime(level) {
+      if (level === 'low') return 3000;
+      if (level === 'medium') return 1500;
+      return 500;
+    }
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const text = document.getElementById('struggle').value;
+      const level = document.getElementById('confidence').value;
+      displayTime = getDisplayTime(level);
       let words = text.match(/\b(\w+)\b/g);
       words = [...new Set(words)];
       selectedWords = words.sort(() => 0.5 - Math.random()).slice(0, 20);
+      wordResults = [];
+      currentIndex = 0;
       form.parentElement.classList.add('hidden');
       flashSection.classList.remove('hidden');
       showWord();
     });
 
+    function goBack() {
+      flashSection.classList.add('hidden');
+      document.getElementById('form-section').classList.remove('hidden');
+    }
+
     function showWord() {
       if (currentIndex >= selectedWords.length) {
-        flashWord.textContent = 'Done!';
-        userGuess.classList.add('hidden');
+        showSummary();
         return;
       }
+      progress.style.width = (currentIndex / selectedWords.length * 100) + '%';
       flashWord.textContent = selectedWords[currentIndex];
       setTimeout(() => {
         flashWord.textContent = '';
         userGuess.value = '';
         userGuess.focus();
-      }, 1500);
+      }, displayTime);
     }
 
     function submitGuess() {
@@ -100,15 +160,40 @@
       const originalWord = selectedWords[currentIndex].toLowerCase();
       if (userInput === originalWord) {
         feedback.textContent = 'Correct!';
+        wordResults.push({ word: originalWord, status: 'OK' });
+        currentIndex++;
+        setTimeout(() => {
+          feedback.textContent = '';
+          showWord();
+        }, 1000);
       } else {
         const meaning = dictionary[originalWord] || 'Definition not available.';
         feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: ${meaning}`;
+        wordResults.push({ word: originalWord, status: 'Not OK' });
+        userGuess.disabled = true;
+        nextBtn.classList.remove('hidden');
       }
+    }
+
+    function nextWord() {
+      userGuess.disabled = false;
+      feedback.textContent = '';
+      nextBtn.classList.add('hidden');
       currentIndex++;
-      setTimeout(() => {
-        feedback.textContent = '';
-        showWord();
-      }, 2000);
+      showWord();
+    }
+
+    function showSummary() {
+      flashWord.textContent = 'Session Complete!';
+      userGuess.classList.add('hidden');
+      feedback.classList.add('hidden');
+      let html = '<table><tr><th>Word</th><th>Status</th></tr>';
+      wordResults.forEach(w => {
+        html += `<tr><td>${w.word}</td><td>${w.status}</td></tr>`;
+      });
+      html += '</table>';
+      summary.innerHTML = html;
+      summary.classList.remove('hidden');
     }
   </script>
 </body>
