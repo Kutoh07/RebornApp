@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome to your new life</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
       background-color: #111;
@@ -16,89 +16,69 @@
       text-align: center;
       margin: 40px;
     }
-    .progress-bar {
-      width: 100%;
-      background-color: #222;
-      margin-top: 10px;
+    .missed-word {
+      color: red;
+      font-weight: bold;
     }
-    .progress {
-      height: 20px;
-      background-color: #0f0;
-      width: 0%;
-    }
-    table {
-      width: 100%;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #0f0;
-      padding: 8px;
-      text-align: center;
-      color: #0f0;
+    .definition {
+      font-style: italic;
     }
   </style>
 </head>
-<body class="section">
+<body class="p-4">
   <div id="form-section" class="container">
-    <h2 class="title has-text-success">Welcome to your new life</h2>
+    <h2 class="text-success">Welcome to your new life</h2>
     <p>This app will help you use your past and your present to reborn the true you and bring yourself to know who you are and unlock the full potential of your mind</p>
     <form id="userForm">
-      <div class="field">
-        <label class="label">Name:</label>
-        <div class="control">
-          <input class="input" type="text" id="name" required />
-        </div>
+      <div class="mb-3">
+        <label class="form-label">Language</label>
+        <select class="form-select" id="language">
+          <option value="en" selected>English</option>
+          <option value="fr">French</option>
+        </select>
       </div>
-      <div class="field">
-        <label class="label">Age:</label>
-        <div class="control">
-          <div class="select">
-            <select id="age" required></select>
-          </div>
-        </div>
+      <div class="mb-3 input-group">
+        <span class="input-group-text">👤</span>
+        <input class="form-control" type="text" id="name" placeholder="Name" required />
       </div>
-      <div class="field">
-        <label class="label">Sex:</label>
-        <div class="control">
-          <div class="select">
-            <select id="sex" required>
-              <option>Man</option>
-              <option>Woman</option>
-            </select>
-          </div>
-        </div>
+      <div class="mb-3 input-group">
+        <span class="input-group-text">🎂</span>
+        <select class="form-select" id="age" required></select>
       </div>
-      <div class="field">
-        <label class="label">Level of confidence:</label>
-        <div class="control">
-          <div class="select">
-            <select id="confidence" required>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-        </div>
+      <div class="mb-3 input-group">
+        <span class="input-group-text">⚧️</span>
+        <select class="form-select" id="sex" required>
+          <option>Man</option>
+          <option>Woman</option>
+        </select>
       </div>
-      <div class="field">
-        <label class="label">Your current struggle:</label>
-        <div class="control">
-          <textarea class="textarea" id="struggle" rows="4" required></textarea>
-        </div>
+      <div class="mb-3 input-group">
+        <span class="input-group-text">🔥</span>
+        <select class="form-select" id="confidence" required>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
       </div>
-      <button class="button is-link" type="submit">Submit</button>
+      <div class="mb-3 input-group">
+        <span class="input-group-text">🧠</span>
+        <textarea class="form-control" id="struggle" rows="4" placeholder="Describe your current struggle" required></textarea>
+      </div>
+      <button class="btn btn-primary" type="submit">Submit</button>
     </form>
   </div>
 
-  <div id="flash-section" class="container is-hidden">
-    <div class="progress-bar"><div id="progress" class="progress"></div></div>
+  <div id="flash-section" class="container d-none">
+    <div class="progress my-3">
+      <div id="progress" class="progress-bar" style="width: 0%">0/0</div>
+    </div>
     <div id="flash-word" class="flash"></div>
-    <input class="input" type="text" id="userGuess" placeholder="What did you see?" />
-    <button class="button is-success mt-2" onclick="submitGuess()">Submit Guess</button>
+    <input class="form-control my-2" type="text" id="userGuess" placeholder="What did you see?" />
+    <button class="btn btn-success" onclick="submitGuess()">Submit Guess</button>
     <div id="feedback" class="mt-2"></div>
-    <button class="button is-warning mt-2" onclick="goBack()">Return</button>
-    <button id="nextBtn" class="button is-info mt-2 is-hidden" onclick="nextWord()">Next</button>
-    <div id="summary" class="mt-4 is-hidden"></div>
+    <button class="btn btn-warning mt-2" onclick="goBack()">Return</button>
+    <button id="nextBtn" class="btn btn-info mt-2 d-none" onclick="nextWord()">Next</button>
+    <div id="summary" class="mt-4 d-none"></div>
   </div>
 
   <script>
@@ -115,16 +95,9 @@
     let currentIndex = 0;
     let displayTime = 1500;
     let wordResults = [];
+    let language = 'en';
 
-    const stopWords = [
-      'the','is','in','at','which','on','and','a','an','to','of','for','with','by','as','from','that','this','these','those','it','its','be','are','was','were','has','have','had','but','or','if','then','so','such','also'
-    ];
-
-    const dictionary = {
-      "struggle": "to try very hard to do something difficult",
-      "emotion": "a strong feeling such as love or anger",
-      "anxiety": "a feeling of worry or nervousness"
-    };
+    const stopWords = [...]; // use same stopWords array from before
 
     for (let i = 10; i <= 100; i++) {
       const opt = document.createElement('option');
@@ -134,15 +107,14 @@
     }
 
     function getDisplayTime(level) {
-      if (level === 'low') return 3000;
-      if (level === 'medium') return 1500;
-      return 500;
+      return level === 'low' ? 3000 : level === 'medium' ? 1500 : 500;
     }
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       const text = document.getElementById('struggle').value;
       const level = document.getElementById('confidence').value;
+      language = document.getElementById('language').value;
       displayTime = getDisplayTime(level);
 
       const confidenceLimits = { low: 10, medium: 15, high: 20 };
@@ -150,22 +122,21 @@
 
       const words = text.match(/\b(\w+)\b/g).map(w => w.toLowerCase());
       const filteredWords = [...new Set(words)].filter(w => !stopWords.includes(w));
-
-      const strongWords = filteredWords.filter(w => !/^(the|and|to|of|in|a|is|it|for|on|with|as|by|at|be|an|from|this|that)$/.test(w));
+      const strongWords = filteredWords.filter(w => !stopWords.includes(w));
 
       const numberToSelect = Math.min(maxWords, Math.ceil(strongWords.length * 0.2));
       selectedWords = strongWords.sort(() => 0.5 - Math.random()).slice(0, numberToSelect);
 
       wordResults = [];
       currentIndex = 0;
-      form.parentElement.classList.add('is-hidden');
-      flashSection.classList.remove('is-hidden');
+      form.parentElement.classList.add('d-none');
+      flashSection.classList.remove('d-none');
       showWord();
     });
 
     function goBack() {
-      flashSection.classList.add('is-hidden');
-      document.getElementById('form-section').classList.remove('is-hidden');
+      flashSection.classList.add('d-none');
+      document.getElementById('form-section').classList.remove('d-none');
     }
 
     function showWord() {
@@ -173,8 +144,9 @@
         showSummary();
         return;
       }
-      progress.style.width = (currentIndex / selectedWords.length * 100) + '%';
       flashWord.textContent = selectedWords[currentIndex];
+      progress.style.width = `${(currentIndex / selectedWords.length) * 100}%`;
+      progress.textContent = `${currentIndex}/${selectedWords.length}`;
       setTimeout(() => {
         flashWord.textContent = '';
         userGuess.value = '';
@@ -186,51 +158,51 @@
       const userInput = userGuess.value.trim().toLowerCase();
       const originalWord = selectedWords[currentIndex].toLowerCase();
       if (userInput === originalWord) {
-        feedback.textContent = 'Correct!';
+        feedback.innerHTML = '<span class="text-success">Correct!</span>';
         wordResults.push({ word: originalWord, status: 'OK' });
         currentIndex++;
         setTimeout(() => {
-          feedback.textContent = '';
+          feedback.innerHTML = '';
           showWord();
         }, 1000);
       } else {
-        fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${originalWord}`)
+        fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${originalWord}`)
           .then(res => res.json())
           .then(data => {
             const definition = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
-            feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: ${definition}`;
+            feedback.innerHTML = `Wrong! The word was <span class='missed-word'>${originalWord}</span>. Meaning: <span class='definition'>${definition}</span>`;
             wordResults.push({ word: originalWord, status: 'Not OK' });
             userGuess.disabled = true;
-            nextBtn.classList.remove('is-hidden');
+            nextBtn.classList.remove('d-none');
           })
           .catch(() => {
-            feedback.textContent = `Wrong! The word was "${originalWord}". Meaning: Definition not available.`;
+            feedback.innerHTML = `Wrong! The word was <span class='missed-word'>${originalWord}</span>. Meaning: <span class='definition'>Definition not available.</span>`;
             wordResults.push({ word: originalWord, status: 'Not OK' });
             userGuess.disabled = true;
-            nextBtn.classList.remove('is-hidden');
+            nextBtn.classList.remove('d-none');
           });
       }
     }
 
     function nextWord() {
       userGuess.disabled = false;
-      feedback.textContent = '';
-      nextBtn.classList.add('is-hidden');
+      feedback.innerHTML = '';
+      nextBtn.classList.add('d-none');
       currentIndex++;
       showWord();
     }
 
     function showSummary() {
       flashWord.textContent = 'Session Complete!';
-      userGuess.classList.add('is-hidden');
-      feedback.classList.add('is-hidden');
-      let html = '<table class="table is-bordered is-striped"><thead><tr><th>Word</th><th>Status</th></tr></thead><tbody>';
+      userGuess.classList.add('d-none');
+      feedback.classList.add('d-none');
+      let html = '<table class="table table-bordered table-striped"><thead><tr><th>Word</th><th>Status</th></tr></thead><tbody>';
       wordResults.forEach(w => {
         html += `<tr><td>${w.word}</td><td>${w.status}</td></tr>`;
       });
       html += '</tbody></table>';
       summary.innerHTML = html;
-      summary.classList.remove('is-hidden');
+      summary.classList.remove('d-none');
     }
   </script>
 </body>
