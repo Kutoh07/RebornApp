@@ -1,270 +1,80 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title id="page-title">Welcome to your new life</title>
+  <title>Welcome to your new life</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #111;
-      color: #0f0;
-    }
-    .flash {
-      font-size: 2em;
-      color: #0ff;
-      text-align: center;
-      margin: 40px;
-    }
-    .missed-word {
-      color: red;
-      font-weight: bold;
-    }
-    .definition {
-      font-style: italic;
-    }
-    .flag {
-      width: 20px;
-      height: 15px;
-      margin-right: 5px;
-    }
-  </style>
 </head>
-<body class="p-4">
-  <div id="form-section" class="container">
-    <h2 id="main-title" class="text-success">Welcome to your new life</h2>
-    <p id="subtitle">This app will help you use your past and your present to reborn the true you and bring yourself to know who you are and unlock the full potential of your mind</p>
-    <form id="userForm">
+<body class="p-4 bg-dark text-light">
+  <div class="container">
+    <h2 class="text-success">Welcome to your new life</h2>
+    <p>This app will help you use your past and your present to reborn the true you and unlock your full potential</p>
+    <form onsubmit="storeData(); return false;">
       <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="language" id="label-language">Language</label>
-          <select class="form-select" id="language" onchange="translateUI()">
-            <option value="en" selected>English</option>
+        <div class="col">
+          <label>Language</label>
+          <select class="form-select" id="language">
+            <option value="en">English</option>
             <option value="fr">French</option>
           </select>
         </div>
-        <div class="col-md-6">
-          <label for="country" id="label-country">Country</label>
-          <select class="form-select" id="country"></select>
+        <div class="col">
+          <label>Country</label>
+          <select class="form-select" id="country">
+            <option value="US">🇺🇸 United States</option>
+            <option value="FR">🇫🇷 France</option>
+            <option value="DE">🇩🇪 Germany</option>
+          </select>
         </div>
       </div>
-
       <div class="row mb-3">
-        <div class="col-md-4 input-group">
-          <span class="input-group-text">👤</span>
-          <input class="form-control" type="text" id="name" placeholder="Name" required />
+        <div class="col"><input class="form-control" type="text" id="name" placeholder="Name" required></div>
+        <div class="col">
+          <select class="form-select" id="age">
+            <script>
+              for (let i = 10; i <= 100; i++) {
+                document.write('<option value="' + i + '">' + i + '</option>');
+              }
+            </script>
+          </select>
         </div>
-        <div class="col-md-4 input-group">
-          <span class="input-group-text">🎂</span>
-          <select class="form-select" id="age" required></select>
-        </div>
-        <div class="col-md-4 input-group">
-          <span class="input-group-text">⚧️</span>
-          <select class="form-select" id="sex" required>
+        <div class="col">
+          <select class="form-select" id="sex">
             <option value="man">Man</option>
             <option value="woman">Woman</option>
           </select>
         </div>
       </div>
-
       <div class="row mb-3">
-        <div class="col-md-10 input-group">
-          <span class="input-group-text">🧠</span>
-          <textarea class="form-control" id="struggle" rows="3" placeholder="Describe your current struggle" required></textarea>
-        </div>
-        <div class="col-md-2">
-          <label for="confidence">Confidence</label>
-          <select class="form-select" id="confidence" required>
+        <div class="col-10"><textarea class="form-control" id="struggle" rows="3" placeholder="Describe your struggle"></textarea></div>
+        <div class="col-2">
+          <label>Confidence</label>
+          <select class="form-select" id="confidence">
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
         </div>
       </div>
-      <button class="btn btn-primary" type="submit">Submit</button>
+      <button class="btn btn-primary">Continue</button>
     </form>
   </div>
-
-<script>
-  const countries = [
-    { name: "France", code: "FR", flag: "🇫🇷" },
-    { name: "United States", code: "US", flag: "🇺🇸" },
-    { name: "Germany", code: "DE", flag: "🇩🇪" },
-    { name: "Japan", code: "JP", flag: "🇯🇵" },
-    { name: "Brazil", code: "BR", flag: "🇧🇷" },
-    { name: "Canada", code: "CA", flag: "🇨🇦" },
-    { name: "India", code: "IN", flag: "🇮🇳" },
-    { name: "United Kingdom", code: "GB", flag: "🇬🇧" },
-    { name: "Italy", code: "IT", flag: "🇮🇹" },
-    { name: "Spain", code: "ES", flag: "🇪🇸" }
-    // Add more countries as needed
-  ];
-
-  function populateCountries() {
-    const countrySelect = document.getElementById('country');
-    countries.forEach(c => {
-      const option = document.createElement('option');
-      option.value = c.code;
-      option.textContent = `${c.flag} ${c.name}`;
-      countrySelect.appendChild(option);
-    });
-  }
-
-  const i18n = {
-    en: {
-      placeholders: {
-        name: "Name",
-        struggle: "Describe your current struggle"
-      },
-      labels: {
-        language: "Language",
-        country: "Country",
-        confidence: "Confidence"
-      },
-      submit: "Submit",
-      title: "Welcome to your new life",
-      subtitle: "This app will help you use your past and your present to reborn the true you and bring yourself to know who you are and unlock the full potential of your mind"
-    },
-    fr: {
-      placeholders: {
-        name: "Nom",
-        struggle: "Décrivez votre difficulté actuelle"
-      },
-      labels: {
-        language: "Langue",
-        country: "Pays",
-        confidence: "Confiance"
-      },
-      submit: "Soumettre",
-      title: "Bienvenue dans votre nouvelle vie",
-      subtitle: "Cette application vous aide à utiliser votre passé et votre présent pour faire renaître votre vrai moi et révéler tout le potentiel de votre esprit"
+  <script>
+    function storeData() {
+      const data = {
+        language: document.getElementById('language').value,
+        country: document.getElementById('country').value,
+        name: document.getElementById('name').value,
+        age: document.getElementById('age').value,
+        sex: document.getElementById('sex').value,
+        confidence: document.getElementById('confidence').value,
+        struggle: document.getElementById('struggle').value,
+      };
+      localStorage.setItem('userData', JSON.stringify(data));
+      window.location.href = 'guess.html';
     }
-  };
-
-  function translateUI() {
-    const lang = document.getElementById('language').value;
-    const t = i18n[lang];
-    document.getElementById('page-title').textContent = t.title;
-    document.getElementById('main-title').textContent = t.title;
-    document.getElementById('subtitle').textContent = t.subtitle;
-    document.getElementById('name').placeholder = t.placeholders.name;
-    document.getElementById('struggle').placeholder = t.placeholders.struggle;
-    document.getElementById('label-language').textContent = t.labels.language;
-    document.getElementById('label-country').textContent = t.labels.country;
-    document.querySelector('label[for="confidence"]').textContent = t.labels.confidence;
-    document.querySelector('#userForm button[type="submit"]').textContent = t.submit;
-  }
-
-  function populateAges() {
-  const ageSelect = document.getElementById('age');
-  for (let i = 10; i <= 100; i++) {
-    const option = document.createElement('option');
-    option.value = i;
-    option.textContent = i;
-    ageSelect.appendChild(option);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  populateAges();
-    populateCountries();
-    translateUI();
-  });
-// Speech synthesis for feedback
-function speak(text) {
-  if ('speechSynthesis' in window) {
-    const msg = new SpeechSynthesisUtterance();
-    msg.text = text;
-    msg.lang = language === 'fr' ? 'fr-FR' : 'en-US';
-    speechSynthesis.speak(msg);
-  }
-}
-
-// Animate form on load
-window.addEventListener('DOMContentLoaded', () => {
-  const formSection = document.getElementById('form-section');
-  formSection.classList.add('animate__animated', 'animate__fadeIn');
-});
-
-// Include Animate.css
-const link = document.createElement('link');
-link.rel = 'stylesheet';
-link.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
-document.head.appendChild(link);
-function getDisplayTime(level) {
-  return level === 'low' ? 3000 : level === 'medium' ? 1500 : 500;
-}
-
-function goBack() {
-  document.getElementById('flash-section').classList.add('d-none');
-  document.getElementById('form-section').classList.remove('d-none');
-}
-
-function showWord() {
-  if (currentIndex >= selectedWords.length) {
-    showSummary();
-    return;
-  }
-  document.getElementById('flash-word').textContent = selectedWords[currentIndex];
-  const progress = document.getElementById('progress');
-  progress.style.width = `${(currentIndex / selectedWords.length) * 100}%`;
-  progress.textContent = `${currentIndex}/${selectedWords.length}`;
-  setTimeout(() => {
-    document.getElementById('flash-word').textContent = '';
-    document.getElementById('userGuess').value = '';
-    document.getElementById('userGuess').focus();
-  }, displayTime);
-}
-
-function submitGuess() {
-  const userInput = document.getElementById('userGuess').value.trim().toLowerCase();
-  const originalWord = selectedWords[currentIndex].toLowerCase();
-  if (userInput === originalWord) {
-    document.getElementById('feedback').innerHTML = '<span class="text-success">Correct!</span>';
-    wordResults.push({ word: originalWord, status: 'OK' });
-    currentIndex++;
-    setTimeout(() => {
-      document.getElementById('feedback').innerHTML = '';
-      showWord();
-    }, 1000);
-  } else {
-    fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${originalWord}`)
-      .then(res => res.json())
-      .then(data => {
-        const definition = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
-        document.getElementById('feedback').innerHTML = `Wrong! The word was <span class='missed-word'>${originalWord}</span>. Meaning: <span class='definition'>${definition}</span>`;
-        speak(definition);
-        wordResults.push({ word: originalWord, status: 'Not OK' });
-        document.getElementById('userGuess').disabled = true;
-        document.getElementById('nextBtn').classList.remove('d-none');
-      })
-      .catch(() => {
-        document.getElementById('feedback').innerHTML = `Wrong! The word was <span class='missed-word'>${originalWord}</span>. Meaning: <span class='definition'>Definition not available.</span>`;
-        wordResults.push({ word: originalWord, status: 'Not OK' });
-        document.getElementById('userGuess').disabled = true;
-        document.getElementById('nextBtn').classList.remove('d-none');
-      });
-  }
-}
-
-function nextWord() {
-  document.getElementById('userGuess').disabled = false;
-  document.getElementById('feedback').innerHTML = '';
-  document.getElementById('nextBtn').classList.add('d-none');
-  currentIndex++;
-  showWord();
-}
-
-function showSummary() {
-  document.getElementById('flash-word').textContent = 'Session Complete!';
-  document.getElementById('userGuess').classList.add('d-none');
-  document.getElementById('feedback').classList.add('d-none');
-  let html = '<table class="table table-bordered table-striped"><thead><tr><th>Word</th><th>Status</th></tr></thead><tbody>';
-  wordResults.forEach(w => {
-    html += `<tr><td>${w.word}</td><td>${w.status}</td></tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('summary').innerHTML = html;
-  document.getElementById('summary').classList.remove('d-none');
-}
-</script>
+  </script>
+</body>
+</html>

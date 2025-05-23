@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Word Flash Game</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #000; color: #0f0; }
+    .flash { font-size: 2em; text-align: center; margin: 40px; color: #0ff; }
+    .missed { color: red; font-weight: bold; }
+    .definition { font-style: italic; }
+  </style>
+</head>
+<body class="p-4">
+  <div class="container">
+    <div id="progress" class="my-3"></div>
+    <div id="flash" class="flash"></div>
+    <input class="form-control" type="text" id="guess" placeholder="What did you see?" />
+    <button class="btn btn-success mt-2" onclick="checkGuess()">Submit Guess</button>
+    <div id="feedback" class="mt-2"></div>
+    <button class="btn btn-secondary mt-2" onclick="nextWord()">Next</button>
+  </div>
+  <script>
+    let words = [];
+    let currentIndex = 0;
+    let userData = JSON.parse(localStorage.getItem('userData'));
+    let displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+    let wordResults = [];
+
+    const rawWords = userData.struggle.match(/\b\w+\b/g);
+    const uniqueWords = [...new Set(rawWords)].filter(w => w.length > 2);
+    const max = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
+    words = uniqueWords.sort(() => 0.5 - Math.random()).slice(0, Math.min(max, Math.ceil(uniqueWords.length * 0.2)));
+
+    function showWord() {
+      if (currentIndex >= words.length) {
+        document.getElementById('feedback').innerHTML = '<h4>Session Complete</h4>';
+        return;
+      }
+      document.getElementById('flash').textContent = words[currentIndex];
+      setTimeout(() => {
+        document.getElementById('flash').textContent = '';
+      }, displayTime);
+    }
+
+    function checkGuess() {
+      const userInput = document.getElementById('guess').value.trim().toLowerCase();
+      const correctWord = words[currentIndex].toLowerCase();
+      if (userInput === correctWord) {
+        wordResults.push({ word: correctWord, status: 'OK' });
+        document.getElementById('feedback').innerHTML = '<span class="text-success">Correct!</span>';
+      } else {
+        fetch(`https://api.dictionaryapi.dev/api/v2/entries/${userData.language}/${correctWord}`)
+          .then(res => res.json())
+          .then(data => {
+            const meaning = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
+            document.getElementById('feedback').innerHTML = `Wrong! <span class='missed'>${correctWord}</span>: <span class='definition'>${meaning}</span>`;
+          });
+      }
+    }
+
+    function nextWord() {
+      currentIndex++;
+      document.getElementById('guess').value = '';
+      document.getElementById('feedback').innerHTML = '';
+      showWord();
+    }
+
+    showWord();
+  </script>
+</body>
+</html>
