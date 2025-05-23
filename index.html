@@ -191,6 +191,80 @@ const link = document.createElement('link');
 link.rel = 'stylesheet';
 link.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
 document.head.appendChild(link);
+function getDisplayTime(level) {
+  return level === 'low' ? 3000 : level === 'medium' ? 1500 : 500;
+}
 
+function goBack() {
+  document.getElementById('flash-section').classList.add('d-none');
+  document.getElementById('form-section').classList.remove('d-none');
+}
+
+function showWord() {
+  if (currentIndex >= selectedWords.length) {
+    showSummary();
+    return;
+  }
+  document.getElementById('flash-word').textContent = selectedWords[currentIndex];
+  const progress = document.getElementById('progress');
+  progress.style.width = `${(currentIndex / selectedWords.length) * 100}%`;
+  progress.textContent = `${currentIndex}/${selectedWords.length}`;
+  setTimeout(() => {
+    document.getElementById('flash-word').textContent = '';
+    document.getElementById('userGuess').value = '';
+    document.getElementById('userGuess').focus();
+  }, displayTime);
+}
+
+function submitGuess() {
+  const userInput = document.getElementById('userGuess').value.trim().toLowerCase();
+  const originalWord = selectedWords[currentIndex].toLowerCase();
+  if (userInput === originalWord) {
+    document.getElementById('feedback').innerHTML = '<span class="text-success">Correct!</span>';
+    wordResults.push({ word: originalWord, status: 'OK' });
+    currentIndex++;
+    setTimeout(() => {
+      document.getElementById('feedback').innerHTML = '';
+      showWord();
+    }, 1000);
+  } else {
+    fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${originalWord}`)
+      .then(res => res.json())
+      .then(data => {
+        const definition = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
+        document.getElementById('feedback').innerHTML = `Wrong! The word was <span class='missed-word'>${originalWord}</span>. Meaning: <span class='definition'>${definition}</span>`;
+        speak(definition);
+        wordResults.push({ word: originalWord, status: 'Not OK' });
+        document.getElementById('userGuess').disabled = true;
+        document.getElementById('nextBtn').classList.remove('d-none');
+      })
+      .catch(() => {
+        document.getElementById('feedback').innerHTML = `Wrong! The word was <span class='missed-word'>${originalWord}</span>. Meaning: <span class='definition'>Definition not available.</span>`;
+        wordResults.push({ word: originalWord, status: 'Not OK' });
+        document.getElementById('userGuess').disabled = true;
+        document.getElementById('nextBtn').classList.remove('d-none');
+      });
+  }
+}
+
+function nextWord() {
+  document.getElementById('userGuess').disabled = false;
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('nextBtn').classList.add('d-none');
+  currentIndex++;
+  showWord();
+}
+
+function showSummary() {
+  document.getElementById('flash-word').textContent = 'Session Complete!';
+  document.getElementById('userGuess').classList.add('d-none');
+  document.getElementById('feedback').classList.add('d-none');
+  let html = '<table class="table table-bordered table-striped"><thead><tr><th>Word</th><th>Status</th></tr></thead><tbody>';
+  wordResults.forEach(w => {
+    html += `<tr><td>${w.word}</td><td>${w.status}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('summary').innerHTML = html;
+  document.getElementById('summary').classList.remove('d-none');
+}
 </script>
-<!-- The rest of the script continues below -->
