@@ -10,7 +10,7 @@
     .missed { color: red; font-weight: bold; }
     .definition { font-style: italic; }
     .not-ok { background-color: #330000; }
-    .question-mark { font-size: 3em; color: #ff0; text-align: center; animation: bounce 1s infinite; }
+    .question-mark { font-size: 3em; color: #ff0; text-align: center; animation: bounce 1s infinite; display: none; }
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-10px); }
@@ -23,40 +23,38 @@
       <div id="progress-bar" class="progress-bar" style="width: 0%">0/0</div>
     </div>
     <div id="flash" class="flash"></div>
-    <div id="question" class="question-mark" style="display: none;">?</div>
+    <div id="question" class="question-mark">?</div>
     <input class="form-control" type="text" id="guess" placeholder="What did you see?" />
     <button class="btn btn-success mt-2" onclick="checkGuess()">Submit Guess</button>
     <div id="feedback" class="mt-2"></div>
     <div id="summary" class="mt-4"></div>
   </div>
-
   <script>
     let words = [], currentIndex = 0, wordResults = [];
     const userData = JSON.parse(localStorage.getItem('userData'));
     const displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
     const maxWords = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
-
     const stopWords = new Set(["the","is","in","at","which","on","and","a","an","to","of","for","with","by","as","from","that","this","these","those","it","its","be","are","was","were","has","have","had","but","or","if","then","so","also"]);
-    const rawWords = userData.struggle.match(/\\b\\w+\\b/g);
+
+    const rawWords = userData.struggle.match(/\b\w+\b/g);
     const filteredWords = [...new Set(rawWords.map(w => w.toLowerCase()))].filter(w => w.length > 2 && !stopWords.has(w));
     words = filteredWords.sort(() => 0.5 - Math.random()).slice(0, Math.min(maxWords, Math.ceil(filteredWords.length * 0.2)));
-
-    function showWord() {
-      if (currentIndex >= words.length) return showSummary();
-      updateProgress();
-      document.getElementById('flash').textContent = words[currentIndex];
-      document.getElementById('question').style.display = 'none';
-      setTimeout(() => {
-        document.getElementById('flash').textContent = '';
-        document.getElementById('question').style.display = 'block';
-      }, displayTime);
-    }
 
     function updateProgress() {
       const bar = document.getElementById('progress-bar');
       const percent = (currentIndex / words.length) * 100;
       bar.style.width = percent + '%';
       bar.textContent = `${currentIndex}/${words.length}`;
+    }
+
+    function showWord() {
+      if (currentIndex >= words.length) return showSummary();
+      document.getElementById('flash').textContent = words[currentIndex];
+      document.getElementById('question').style.display = 'none';
+      setTimeout(() => {
+        document.getElementById('flash').textContent = '';
+        document.getElementById('question').style.display = 'block';
+      }, displayTime);
     }
 
     function checkGuess() {
