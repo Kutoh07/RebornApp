@@ -10,7 +10,12 @@
     .missed { color: red; font-weight: bold; }
     .definition { font-style: italic; }
     .not-ok { background-color: #330000; }
-  </style>
+  .question-mark { font-size: 3em; color: #ff0; text-align: center; animation: bounce 1s infinite; }
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+</style>
 </head>
 <body class="p-4">
   <div class="container">
@@ -18,6 +23,7 @@
       <div id="progress-bar" class="progress-bar" style="width: 0%">0/0</div>
     </div>
     <div id="flash" class="flash"></div>
+<div id="question" class="question-mark" style="display: none;">?</div>
     <input class="form-control" type="text" id="guess" placeholder="What did you see?" />
     <button class="btn btn-success mt-2" onclick="checkGuess()">Submit Guess</button>
     <div id="feedback" class="mt-2"></div>
@@ -44,6 +50,7 @@
       document.getElementById('flash').textContent = words[currentIndex];
       setTimeout(() => {
         document.getElementById('flash').textContent = '';
+        document.getElementById('question').style.display = 'block';
       }, displayTime);
     }
 
@@ -55,19 +62,30 @@
     }
 
     function checkGuess() {
-      const userInput = document.getElementById('guess').value.trim().toLowerCase();
-      const correctWord = words[currentIndex].toLowerCase();
-      if (userInput === correctWord) {
-        wordResults.push({ word: correctWord, status: 'OK' });
-        document.getElementById('feedback').innerHTML = '<span class="text-success">Correct!</span>';
-      } else {
-        fetch(`https://api.dictionaryapi.dev/api/v2/entries/${userData.language}/${correctWord}`)
-          .then(res => res.json())
-          .then(data => {
-            const meaning = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
-            document.getElementById('feedback').innerHTML = `Wrong! <span class='missed'>${correctWord}</span>: <span class='definition'>${meaning}</span>`;
-          });
-        wordResults.push({ word: correctWord, status: 'Not OK' });
+  const userInput = document.getElementById('guess').value.trim().toLowerCase();
+  const correctWord = words[currentIndex].toLowerCase();
+  if (userInput === correctWord) {
+    wordResults.push({ word: correctWord, status: 'OK' });
+    document.getElementById('feedback').innerHTML = '<span class="text-success">Correct!</span>';
+  } else {
+    fetch(`https://api.dictionaryapi.dev/api/v2/entries/${userData.language}/${correctWord}`)
+      .then(res => res.json())
+      .then(data => {
+        const meaning = data[0]?.meanings[0]?.definitions[0]?.definition || 'Definition not found.';
+        document.getElementById('feedback').innerHTML = `Wrong! <span class='missed'>${correctWord}</span>: <span class='definition'>${meaning}</span>`;
+      });
+    wordResults.push({ word: correctWord, status: 'Not OK' });
+  }
+  currentIndex++;
+  document.getElementById('guess').value = '';
+  document.getElementById('question').style.display = 'none';
+  updateProgress();
+  if (currentIndex < words.length) {
+    setTimeout(showWord, 500);
+  } else {
+    showSummary();
+  }
+}
       }
     }
 
