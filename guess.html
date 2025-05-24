@@ -120,10 +120,10 @@
         <div class="col-md-8">
           <input class="form-control form-control-custom" type="text" id="guess" placeholder="What did you see?" />
           <div class="text-center mt-3">
-            <button id="submit-btn" class="btn btn-success btn-custom me-2" onclick="checkGuess()">
+            <button id="submit-btn" class="btn btn-success btn-custom" onclick="checkGuess()">
               <i class="bi bi-check-circle me-1"></i>Submit Guess
             </button>
-            <button id="next-btn" class="btn btn-secondary btn-custom" onclick="nextWord()">
+            <button id="next-btn" class="btn btn-secondary btn-custom" onclick="nextWord()" style="display: none;">
               <i class="bi bi-arrow-right me-1"></i>Next
             </button>
           </div>
@@ -406,16 +406,35 @@
       const userInput = document.getElementById('guess').value.trim().toLowerCase();
       const correctWord = words[currentIndex].toLowerCase();
       const feedbackDiv = document.getElementById('feedback');
+      const submitBtn = document.getElementById('submit-btn');
+      const nextBtn = document.getElementById('next-btn');
+      const guessInput = document.getElementById('guess');
+      
+      // Disable submit button and input to prevent multiple submissions
+      submitBtn.disabled = true;
+      guessInput.disabled = true;
       
       if (userInput === correctWord) {
+        // CORRECT GUESS
         wordResults.push({ 
           word: correctWord, 
           status: 'OK', 
           userGuess: userInput,
           definition: '' 
         });
+        
         feedbackDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i><span class="correct">${t.correct}</span></div>`;
+        
+        currentIndex++;
+        updateProgress();
+        
+        // Auto-advance to next word after 2 seconds
+        setTimeout(() => {
+          clearFeedbackAndShowNextWord();
+        }, 2000);
+        
       } else {
+        // WRONG GUESS
         // Show loading
         feedbackDiv.innerHTML = `<div class="alert alert-warning"><i class="bi bi-hourglass-split me-2"></i>${t.loading} "<strong>${correctWord}</strong>"...</div>`;
 
@@ -435,30 +454,42 @@
             <small class='definition'><strong>${t.definition}</strong> ${definitionData.definition}</small>
           </div>
         `;
-      }
-      
-      currentIndex++;
-      updateProgress();
-    }
-
-    // Next word
-    function nextWord() {
-      const t = getTranslations();
-      
-      // If user didn't guess, count as wrong
-      if (currentIndex < words.length && !wordResults.some(r => r.word === words[currentIndex].toLowerCase())) {
-        wordResults.push({ 
-          word: words[currentIndex].toLowerCase(), 
-          status: 'NOT OK', 
-          userGuess: t.skipped,
-          definition: t.skipped 
-        });
+        
+        // Show Next button only for wrong answers
+        nextBtn.style.display = 'inline-block';
+        
         currentIndex++;
         updateProgress();
       }
-      
-      document.getElementById('guess').value = '';
+    }
+
+    // Clear feedback and show next word (for correct answers)
+    function clearFeedbackAndShowNextWord() {
       document.getElementById('feedback').innerHTML = '';
+      document.getElementById('guess').value = '';
+      document.getElementById('guess').disabled = false;
+      document.getElementById('submit-btn').disabled = false;
+      
+      showWord();
+    }
+
+    // Next word (for wrong answers)
+    function nextWord() {
+      const nextBtn = document.getElementById('next-btn');
+      const submitBtn = document.getElementById('submit-btn');
+      const guessInput = document.getElementById('guess');
+      
+      // Hide Next button
+      nextBtn.style.display = 'none';
+      
+      // Re-enable input and submit button
+      guessInput.disabled = false;
+      submitBtn.disabled = false;
+      
+      // Clear input and feedback
+      guessInput.value = '';
+      document.getElementById('feedback').innerHTML = '';
+      
       showWord();
     }
 
@@ -505,7 +536,7 @@
 
     // Event listeners
     document.getElementById('guess').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && !this.disabled) {
         checkGuess();
       }
     });
