@@ -1,8 +1,138 @@
-<!DOCTYPE html>
+<script>
+    let words = [];
+    let currentIndex = 0;
+    let userData = JSON.parse(localStorage.getItem('userData'));
+    let displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+    let wordResults = [];
+    let isShowingWord = false;
+
+    // Language translations
+    const translations = {
+      en: {
+        title: "Word Flash Game",
+        progress: "Progress",
+        placeholder: "What did you see?",
+        submitBtn: "Submit Guess",
+        nextBtn: "Next",
+        correct: "Correct!",
+        wrong: "Wrong! The word was:",
+        definition: "Definition:",
+        loading: "Looking up definition for",
+        sessionComplete: "Session Complete!",
+        results: "Game Results",
+        wordHeader: "Word",
+        statusHeader: "Status", 
+        definitionHeader: "Definition",
+        yourResults: "Your Results",
+        gotCorrect: "You got",
+        outOf: "out of",
+        wordsCorrect: "words correct",
+        skipped: "Skipped by user",
+        noGuess: "no guess",
+        source: "Source"
+      },
+      fr: {
+        title: "Jeu de Mots Flash",
+        progress: "Progrès",
+        placeholder: "Qu'avez-vous vu ?",
+        submitBtn: "Soumettre",
+        nextBtn: "Suivant",
+        correct: "Correct !",
+        wrong: "Faux ! Le mot était :",
+        definition: "Définition :",
+        loading: "Recherche de la définition pour",
+        sessionComplete: "Session Terminée !",
+        results: "Résultats du Jeu",
+        wordHeader: "Mot",
+        statusHeader: "Statut",
+        definitionHeader: "Définition", 
+        yourResults: "Vos Résultats",
+        gotCorrect: "Vous avez obtenu",
+        outOf: "sur",
+        wordsCorrect: "mots corrects",
+        skipped: "Passé par l'utilisateur",
+        noGuess: "pas de réponse",
+        source: "Source"
+      }
+    };
+
+    // Get current language translations
+    function getTranslations() {
+      return translations[userData.language] || translations.en;
+    }
+
+    // Update page language
+    function updateLanguage() {
+      const t = getTranslations();
+      
+      document.getElementById('page-title').textContent = t.title;
+      document.getElementById('progress-title').textContent = t.progress;
+      document.getElementById('guess').placeholder = t.placeholder;
+      document.getElementById('submit-btn').innerHTML = `<i class="bi bi-check-circle me-1"></i>${t.submitBtn}`;
+      document.getElementById('next-btn').innerHTML = `<i class="bi bi-arrow-right me-1"></i>${t.nextBtn}`;
+      document.getElementById('results-title').textContent = t.results;
+      document.getElementById('word-header').textContent = t.wordHeader;
+      document.getElementById('status-header').textContent = t.statusHeader;
+      document.getElementById('definition-header').textContent = t.definitionHeader;
+    }
+
+    // Enhanced word filtering with language-specific stop words
+    function filterMeaningfulWords(text) {
+      const rawWords = text.match(/\b\w+\b/g) || [];
+      
+      // Language-specific stop words
+      const stopWords = {
+        en: new Set([
+          'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is', 'it',
+          'its', 'of', 'on', 'that', 'the', 'to', 'was', 'will', 'with', 'i', 'me', 'my', 'we', 'you',
+          'your', 'they', 'them', 'their', 'this', 'these', 'those', 'have', 'had', 'do', 'does', 'did',
+          'can', 'could', 'would', 'should', 'may', 'might', 'must', 'shall', 'am', 're', 've', 'll', 'd',
+          'don', 't', 's', 'but', 'or', 'so', 'if', 'when', 'where', 'why', 'how', 'what', 'who', 'which',
+          'than', 'then', 'now', 'here', 'there', 'up', 'down', 'out', 'off', 'over', 'under', 'again',
+          'further', 'once', 'very', 'too', 'just', 'only', 'own', 'same', 'such', 'through', 'during',
+          'before', 'after', 'above', 'below', 'between', 'into', 'upon', 'about', 'against', 'within'
+        ]),
+        fr: new Set([
+          'le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour', 'dans', 'ce', 'son',
+          'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'ce', 'le', 'bien', 'autre',
+          'alors', 'après', 'ainsi', 'au', 'aux', 'ces', 'cet', 'cette', 'du', 'elle', 'elles', 'eux', 'leur',
+          'leurs', 'lui', 'ma', 'mes', 'mon', 'nos', 'notre', 'sa', 'ses', 'ta', 'tes', 'ton', 'tu', 'un', 'une',
+          'vos', 'votre', 'vous', 'comme', 'dans', 'des', 'donc', 'dont', 'où', 'ou', 'quand', 'que', 'quel',
+          'quelle', 'quelles', 'quels', 'qui', 'quoi', 'sans', 'sous', 'très', 'trop', 'y', 'je', 'j', 'me',
+          'm', 'te', 't', 'nous', 'se', 's', 'la', 'les', 'l', 'd', 'n', 'c', 'qu', 'si', 'mais', 'ou', 'car'
+        ])
+      };
+
+      const currentStopWords = stopWords[userData.language] || stopWords.en;
+      
+      // Filter words: remove stop words, short words, and keep only meaningful ones
+      const meaningfulWords = rawWords
+        .map(word => word.toLowerCase())
+        .filter(word => 
+          word.length > 3 && 
+          !currentStopWords.has(word) &&
+          /^[a-zA-ZÀ-ÿ]+$/.test(word) && // Letters including accented characters
+          !word.match(/^\d+$/) // No pure numbers
+        );
+
+      // Remove duplicates and return unique words
+      return [...new Set(meaningfulWords)];
+    }
+
+    // Enhanced dictionary lookup with multiple reliable sources for both languages
+    async function getDefinition(word, language) {
+      const definitions = [];
+      
+      // Primary API: Free Dictionary API
+      try {
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${word}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data[0<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Word Flash Game</title>
+  <title id="page-title">Word Flash Game</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
   <style>
@@ -106,7 +236,7 @@
     <div class="game-card p-4">
       <div id="progress-container" class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h5 class="mb-0">Progress</h5>
+          <h5 id="progress-title" class="mb-0">Progress</h5>
           <span id="progress-text" class="fw-bold">0 / 0</span>
         </div>
         <div class="progress progress-custom">
@@ -120,10 +250,10 @@
         <div class="col-md-8">
           <input class="form-control form-control-custom" type="text" id="guess" placeholder="What did you see?" />
           <div class="text-center mt-3">
-            <button class="btn btn-success btn-custom me-2" onclick="checkGuess()">
+            <button id="submit-btn" class="btn btn-success btn-custom me-2" onclick="checkGuess()">
               <i class="bi bi-check-circle me-1"></i>Submit Guess
             </button>
-            <button class="btn btn-secondary btn-custom" onclick="nextWord()">
+            <button id="next-btn" class="btn btn-secondary btn-custom" onclick="nextWord()">
               <i class="bi bi-arrow-right me-1"></i>Next
             </button>
           </div>
@@ -133,15 +263,15 @@
       <div id="feedback" class="mt-4 text-center"></div>
       
       <div id="results-container" class="mt-5" style="display: none;">
-        <h3 class="text-center mb-4">Game Results</h3>
+        <h3 id="results-title" class="text-center mb-4">Game Results</h3>
         <div class="results-table p-4">
           <table class="table table-striped">
             <thead>
               <tr>
                 <th scope="col">#</th>
-                <th scope="col">Word</th>
-                <th scope="col">Status</th>
-                <th scope="col">Definition</th>
+                <th id="word-header" scope="col">Word</th>
+                <th id="status-header" scope="col">Status</th>
+                <th id="definition-header" scope="col">Definition</th>
               </tr>
             </thead>
             <tbody id="results-table-body">
