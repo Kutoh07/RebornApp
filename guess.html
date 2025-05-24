@@ -1,151 +1,4 @@
-  <script>
-    let words = [];
-    let currentIndex = 0;
-    let userData = null;
-    let displayTime = 1500; // Default
-    let wordResults = [];
-    let isShowingWord = false;
-
-    // Try to load user data from localStorage
-    try {
-      const storedData = localStorage.getItem('userData');
-      console.log('Raw stored data:', storedData);
-      
-      if (storedData) {
-        userData = JSON.parse(storedData);
-        console.log('Parsed user data:', userData);
-        displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
-      } else {
-        console.error('No data found in localStorage');
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      userData = null;
-    }
-
-    // Language translations
-    const translations = {
-      en: {
-        title: "Word Flash Game",
-        progress: "Progress",
-        placeholder: "What did you see?",
-        submitBtn: "Submit Guess",
-        nextBtn: "Next",
-        correct: "Correct!",
-        wrong: "Wrong! The word was:",
-        definition: "Definition:",
-        loading: "Looking up definition for",
-        sessionComplete: "Session Complete!",
-        results: "Game Results",
-        wordHeader: "Word",
-        statusHeader: "Status", 
-        definitionHeader: "Definition",
-        yourResults: "Your Results",
-        gotCorrect: "You got",
-        outOf: "out of",
-        wordsCorrect: "words correct",
-        skipped: "Skipped by user",
-        noGuess: "no guess",
-        source: "Source"
-      },
-      fr: {
-        title: "Jeu de Mots Flash",
-        progress: "Progrès",
-        placeholder: "Qu'avez-vous vu ?",
-        submitBtn: "Soumettre",
-        nextBtn: "Suivant",
-        correct: "Correct !",
-        wrong: "Faux ! Le mot était :",
-        definition: "Définition :",
-        loading: "Recherche de la définition pour",
-        sessionComplete: "Session Terminée !",
-        results: "Résultats du Jeu",
-        wordHeader: "Mot",
-        statusHeader: "Statut",
-        definitionHeader: "Définition", 
-        yourResults: "Vos Résultats",
-        gotCorrect: "Vous avez obtenu",
-        outOf: "sur",
-        wordsCorrect: "mots corrects",
-        skipped: "Passé par l'utilisateur",
-        noGuess: "pas de réponse",
-        source: "Source"
-      }
-    };
-
-    // Get current language translations
-    function getTranslations() {
-      return translations[userData.language] || translations.en;
-    }
-
-    // Update page language
-    function updateLanguage() {
-      const t = getTranslations();
-      
-      document.getElementById('page-title').textContent = t.title;
-      document.getElementById('progress-title').textContent = t.progress;
-      document.getElementById('guess').placeholder = t.placeholder;
-      document.getElementById('submit-btn').innerHTML = `<i class="bi bi-check-circle me-1"></i>${t.submitBtn}`;
-      document.getElementById('next-btn').innerHTML = `<i class="bi bi-arrow-right me-1"></i>${t.nextBtn}`;
-      document.getElementById('results-title').textContent = t.results;
-      document.getElementById('word-header').textContent = t.wordHeader;
-      document.getElementById('status-header').textContent = t.statusHeader;
-      document.getElementById('definition-header').textContent = t.definitionHeader;
-    }
-
-    // Enhanced word filtering with language-specific stop words
-    function filterMeaningfulWords(text) {
-      const rawWords = text.match(/\b\w+\b/g) || [];
-      
-      // Language-specific stop words
-      const stopWords = {
-        en: new Set([
-          'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is', 'it',
-          'its', 'of', 'on', 'that', 'the', 'to', 'was', 'will', 'with', 'i', 'me', 'my', 'we', 'you',
-          'your', 'they', 'them', 'their', 'this', 'these', 'those', 'have', 'had', 'do', 'does', 'did',
-          'can', 'could', 'would', 'should', 'may', 'might', 'must', 'shall', 'am', 're', 've', 'll', 'd',
-          'don', 't', 's', 'but', 'or', 'so', 'if', 'when', 'where', 'why', 'how', 'what', 'who', 'which',
-          'than', 'then', 'now', 'here', 'there', 'up', 'down', 'out', 'off', 'over', 'under', 'again',
-          'further', 'once', 'very', 'too', 'just', 'only', 'own', 'same', 'such', 'through', 'during',
-          'before', 'after', 'above', 'below', 'between', 'into', 'upon', 'about', 'against', 'within'
-        ]),
-        fr: new Set([
-          'le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour', 'dans', 'ce', 'son',
-          'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'ce', 'le', 'bien', 'autre',
-          'alors', 'après', 'ainsi', 'au', 'aux', 'ces', 'cet', 'cette', 'du', 'elle', 'elles', 'eux', 'leur',
-          'leurs', 'lui', 'ma', 'mes', 'mon', 'nos', 'notre', 'sa', 'ses', 'ta', 'tes', 'ton', 'tu', 'un', 'une',
-          'vos', 'votre', 'vous', 'comme', 'dans', 'des', 'donc', 'dont', 'où', 'ou', 'quand', 'que', 'quel',
-          'quelle', 'quelles', 'quels', 'qui', 'quoi', 'sans', 'sous', 'très', 'trop', 'y', 'je', 'j', 'me',
-          'm', 'te', 't', 'nous', 'se', 's', 'la', 'les', 'l', 'd', 'n', 'c', 'qu', 'si', 'mais', 'ou', 'car'
-        ])
-      };
-
-      const currentStopWords = stopWords[userData.language] || stopWords.en;
-      
-      // Filter words: remove stop words, short words, and keep only meaningful ones
-      const meaningfulWords = rawWords
-        .map(word => word.toLowerCase())
-        .filter(word => 
-          word.length > 3 && 
-          !currentStopWords.has(word) &&
-          /^[a-zA-ZÀ-ÿ]+$/.test(word) && // Letters including accented characters
-          !word.match(/^\d+$/) // No pure numbers
-        );
-
-      // Remove duplicates and return unique words
-      return [...new Set(meaningfulWords)];
-    }
-
-    // Enhanced dictionary lookup with multiple reliable sources for both languages
-    async function getDefinition(word, language) {
-      const definitions = [];
-      
-      // Primary API: Free Dictionary API
-      try {
-        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${word}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data[0<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -261,7 +114,7 @@
         </div>
       </div>
 
-      <div id="flash" class="flash"></div>
+      <div id="flash" class="flash">Loading...</div>
       
       <div class="row justify-content-center">
         <div class="col-md-8">
@@ -300,91 +153,225 @@
   </div>
 
   <script>
+    console.log('Script starting...');
+    
+    // Global variables
     let words = [];
     let currentIndex = 0;
-    let userData = JSON.parse(localStorage.getItem('userData'));
-    let displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+    let userData = null;
+    let displayTime = 1500;
     let wordResults = [];
     let isShowingWord = false;
 
-    // Enhanced word filtering with NLP-like features
-    function filterMeaningfulWords(text) {
-      const rawWords = text.match(/\b\w+\b/g) || [];
-      
-      // Common stop words to filter out
-      const stopWords = new Set([
-        'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is', 'it',
-        'its', 'of', 'on', 'that', 'the', 'to', 'was', 'will', 'with', 'i', 'me', 'my', 'we', 'you',
-        'your', 'they', 'them', 'their', 'this', 'these', 'those', 'have', 'had', 'do', 'does', 'did',
-        'can', 'could', 'would', 'should', 'may', 'might', 'must', 'shall', 'am', 're', 've', 'll', 'd',
-        'don', 't', 's', 'but', 'or', 'so', 'if', 'when', 'where', 'why', 'how', 'what', 'who', 'which',
-        'than', 'then', 'now', 'here', 'there', 'up', 'down', 'out', 'off', 'over', 'under', 'again',
-        'further', 'once', 'very', 'too', 'just', 'only', 'own', 'same', 'such', 'through', 'during',
-        'before', 'after', 'above', 'below', 'between', 'into', 'upon', 'about', 'against', 'within'
-      ]);
+    // Language translations
+    const translations = {
+      en: {
+        title: "Word Flash Game",
+        progress: "Progress",
+        placeholder: "What did you see?",
+        submitBtn: "Submit Guess",
+        nextBtn: "Next",
+        correct: "Correct!",
+        wrong: "Wrong! The word was:",
+        definition: "Definition:",
+        loading: "Looking up definition for",
+        sessionComplete: "Session Complete!",
+        results: "Game Results",
+        wordHeader: "Word",
+        statusHeader: "Status", 
+        definitionHeader: "Definition",
+        yourResults: "Your Results",
+        gotCorrect: "You got",
+        outOf: "out of",
+        wordsCorrect: "words correct",
+        skipped: "Skipped by user",
+        noGuess: "no guess",
+        source: "Source"
+      },
+      fr: {
+        title: "Jeu de Mots Flash",
+        progress: "Progrès",
+        placeholder: "Qu'avez-vous vu ?",
+        submitBtn: "Soumettre",
+        nextBtn: "Suivant",
+        correct: "Correct !",
+        wrong: "Faux ! Le mot était :",
+        definition: "Définition :",
+        loading: "Recherche de la définition pour",
+        sessionComplete: "Session Terminée !",
+        results: "Résultats du Jeu",
+        wordHeader: "Mot",
+        statusHeader: "Statut",
+        definitionHeader: "Définition", 
+        yourResults: "Vos Résultats",
+        gotCorrect: "Vous avez obtenu",
+        outOf: "sur",
+        wordsCorrect: "mots corrects",
+        skipped: "Passé par l'utilisateur",
+        noGuess: "pas de réponse",
+        source: "Source"
+      }
+    };
 
-      // Filter words: remove stop words, short words, and keep only meaningful ones
+    // Load user data
+    function loadUserData() {
+      try {
+        console.log('Attempting to load user data...');
+        const storedData = localStorage.getItem('userData');
+        console.log('Raw stored data:', storedData);
+        
+        if (!storedData) {
+          console.error('No userData found in localStorage');
+          alert('No user data found. Please fill out the form first.');
+          window.location.href = 'index.html';
+          return false;
+        }
+        
+        userData = JSON.parse(storedData);
+        console.log('Parsed user data:', userData);
+        
+        if (!userData.struggle || userData.struggle.trim() === '') {
+          console.error('No struggle text found');
+          alert('No struggle text found. Please go back and fill out the form.');
+          window.location.href = 'index.html';
+          return false;
+        }
+        
+        displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+        console.log('Display time set to:', displayTime);
+        
+        return true;
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        alert('Error loading user data. Please try again.');
+        window.location.href = 'index.html';
+        return false;
+      }
+    }
+
+    // Get current language translations
+    function getTranslations() {
+      return translations[userData?.language] || translations.en;
+    }
+
+    // Update page language
+    function updateLanguage() {
+      console.log('Updating language...');
+      const t = getTranslations();
+      
+      document.getElementById('page-title').textContent = t.title;
+      document.getElementById('progress-title').textContent = t.progress;
+      document.getElementById('guess').placeholder = t.placeholder;
+      document.getElementById('submit-btn').innerHTML = `<i class="bi bi-check-circle me-1"></i>${t.submitBtn}`;
+      document.getElementById('next-btn').innerHTML = `<i class="bi bi-arrow-right me-1"></i>${t.nextBtn}`;
+      document.getElementById('results-title').textContent = t.results;
+      document.getElementById('word-header').textContent = t.wordHeader;
+      document.getElementById('status-header').textContent = t.statusHeader;
+      document.getElementById('definition-header').textContent = t.definitionHeader;
+    }
+
+    // Filter meaningful words
+    function filterMeaningfulWords(text) {
+      console.log('Filtering words from text:', text);
+      
+      const rawWords = text.match(/\b\w+\b/g) || [];
+      console.log('Raw words found:', rawWords);
+      
+      // Language-specific stop words
+      const stopWords = {
+        en: new Set([
+          'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is', 'it',
+          'its', 'of', 'on', 'that', 'the', 'to', 'was', 'will', 'with', 'i', 'me', 'my', 'we', 'you',
+          'your', 'they', 'them', 'their', 'this', 'these', 'those', 'have', 'had', 'do', 'does', 'did',
+          'can', 'could', 'would', 'should', 'may', 'might', 'must', 'shall', 'am', 're', 've', 'll', 'd',
+          'don', 't', 's', 'but', 'or', 'so', 'if', 'when', 'where', 'why', 'how', 'what', 'who', 'which',
+          'than', 'then', 'now', 'here', 'there', 'up', 'down', 'out', 'off', 'over', 'under', 'again',
+          'further', 'once', 'very', 'too', 'just', 'only', 'own', 'same', 'such', 'through', 'during',
+          'before', 'after', 'above', 'below', 'between', 'into', 'upon', 'about', 'against', 'within'
+        ]),
+        fr: new Set([
+          'le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour', 'dans', 'ce', 'son',
+          'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'ce', 'le', 'bien', 'autre',
+          'alors', 'après', 'ainsi', 'au', 'aux', 'ces', 'cet', 'cette', 'du', 'elle', 'elles', 'eux', 'leur',
+          'leurs', 'lui', 'ma', 'mes', 'mon', 'nos', 'notre', 'sa', 'ses', 'ta', 'tes', 'ton', 'tu', 'un', 'une',
+          'vos', 'votre', 'vous', 'comme', 'dans', 'des', 'donc', 'dont', 'où', 'ou', 'quand', 'que', 'quel',
+          'quelle', 'quelles', 'quels', 'qui', 'quoi', 'sans', 'sous', 'très', 'trop', 'y', 'je', 'j', 'me',
+          'm', 'te', 't', 'nous', 'se', 's', 'la', 'les', 'l', 'd', 'n', 'c', 'qu', 'si', 'mais', 'ou', 'car'
+        ])
+      };
+
+      const currentStopWords = stopWords[userData.language] || stopWords.en;
+      
+      // Filter words
       const meaningfulWords = rawWords
         .map(word => word.toLowerCase())
         .filter(word => 
           word.length > 3 && 
-          !stopWords.has(word) &&
-          /^[a-zA-Z]+$/.test(word) && // Only letters
-          !word.match(/^\d+$/) // No pure numbers
+          !currentStopWords.has(word) &&
+          /^[a-zA-ZÀ-ÿ]+$/.test(word) &&
+          !word.match(/^\d+$/)
         );
 
-      // Remove duplicates and return unique words
-      return [...new Set(meaningfulWords)];
+      const uniqueWords = [...new Set(meaningfulWords)];
+      console.log('Filtered meaningful words:', uniqueWords);
+      
+      return uniqueWords;
     }
 
-    // Initialize words based on user's struggle text
-    function initializeWords() {
+    // Dictionary lookup function
+    async function getDefinition(word, language) {
+      console.log(`Getting definition for "${word}" in ${language}`);
+      
       try {
-        if (!userData || !userData.struggle) {
-          console.error('No user data or struggle text found');
-          alert('No user data found. Please go back to the form.');
-          window.location.href = 'index.html';
-          return;
-        }
-
-        console.log('Processing struggle text:', userData.struggle);
-        const meaningfulWords = filterMeaningfulWords(userData.struggle);
-        console.log('Meaningful words found:', meaningfulWords);
-        
-        if (meaningfulWords.length === 0) {
-          console.error('No meaningful words found in struggle text');
-          alert('No meaningful words found in your text. Please go back and add more details.');
-          window.location.href = 'index.html';
-          return;
-        }
-        
-        // Calculate number of words based on confidence level and 20% rule
-        const totalWordsCount = meaningfulWords.length;
-        const targetCount = Math.ceil(totalWordsCount * 0.2);
-        const maxWords = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
-        const finalCount = Math.min(targetCount, maxWords);
-
-        // Randomly select words
-        words = meaningfulWords
-          .sort(() => 0.5 - Math.random())
-          .slice(0, finalCount);
-
-        console.log(`Total meaningful words: ${totalWordsCount}, Selected: ${words.length}`);
-        console.log('Selected words:', words);
-        
-        if (words.length === 0) {
-          console.error('No words selected for game');
-          alert('Unable to generate words for the game. Please try again.');
-          window.location.href = 'index.html';
-          return;
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${word}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data[0]?.meanings?.[0]?.definitions?.[0]?.definition) {
+            return {
+              definition: data[0].meanings[0].definitions[0].definition,
+              partOfSpeech: data[0].meanings[0].partOfSpeech || '',
+              source: 'Dictionary API'
+            };
+          }
         }
       } catch (error) {
-        console.error('Error in initializeWords:', error);
-        alert('Error processing your text. Please try again.');
-        window.location.href = 'index.html';
+        console.log('Dictionary API failed:', error);
       }
+      
+      return {
+        definition: language === 'fr' ? 'Définition non disponible' : 'Definition not available',
+        partOfSpeech: '',
+        source: 'Fallback'
+      };
     }
 
+    // Initialize words
+    function initializeWords() {
+      console.log('Initializing words...');
+      
+      const meaningfulWords = filterMeaningfulWords(userData.struggle);
+      
+      if (meaningfulWords.length === 0) {
+        alert('No meaningful words found. Please go back and add more details.');
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      // Calculate word count
+      const totalWordsCount = meaningfulWords.length;
+      const targetCount = Math.ceil(totalWordsCount * 0.2);
+      const maxWords = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
+      const finalCount = Math.min(targetCount, maxWords);
+
+      // Select random words
+      words = meaningfulWords
+        .sort(() => 0.5 - Math.random())
+        .slice(0, finalCount);
+
+      console.log(`Selected ${words.length} words:`, words);
+    }
+
+    // Update progress
     function updateProgress() {
       const progressText = document.getElementById('progress-text');
       const progressBar = document.getElementById('progress-bar');
@@ -394,121 +381,28 @@
       progressBar.style.width = `${percentage}%`;
     }
 
+    // Show word
     function showWord() {
+      console.log('Showing word:', words[currentIndex]);
+      
       if (currentIndex >= words.length) {
         showResults();
         return;
       }
       
-      isShowingWord = true;
       const flashDiv = document.getElementById('flash');
       flashDiv.textContent = words[currentIndex];
       
       setTimeout(() => {
         flashDiv.innerHTML = '<i class="bi bi-question-circle question-mark"></i>';
-        isShowingWord = false;
       }, displayTime);
     }
 
-    // Enhanced dictionary lookup with multiple reliable sources
-    async function getDefinition(word, language) {
-      const definitions = [];
-      
-      // Primary API: Free Dictionary API
-      try {
-        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${word}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data[0]?.meanings?.[0]?.definitions?.[0]?.definition) {
-            definitions.push({
-              definition: data[0].meanings[0].definitions[0].definition,
-              partOfSpeech: data[0].meanings[0].partOfSpeech || '',
-              source: 'Dictionary API'
-            });
-          }
-        }
-      } catch (error) {
-        console.log('Dictionary API failed:', error);
-      }
-
-      // Fallback API: Wiktionary (via Wikipedia API)
-      if (definitions.length === 0) {
-        try {
-          const wiktionaryUrl = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`;
-          const response = await fetch(wiktionaryUrl);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.en && data.en[0]?.definitions?.[0]?.definition) {
-              definitions.push({
-                definition: data.en[0].definitions[0].definition.replace(/<[^>]*>/g, ''), // Remove HTML tags
-                partOfSpeech: data.en[0].partOfSpeech || '',
-                source: 'Wiktionary'
-              });
-            }
-          }
-        } catch (error) {
-          console.log('Wiktionary API failed:', error);
-        }
-      }
-
-      // Third fallback: WordsAPI (if available)
-      if (definitions.length === 0) {
-        try {
-          const wordsApiUrl = `https://wordsapiv1.p.rapidapi.com/words/${word}/definitions`;
-          const response = await fetch(wordsApiUrl, {
-            headers: {
-              'X-RapidAPI-Host': 'wordsapiv1.p.rapidapi.com',
-              // Note: This would require an API key in a real implementation
-            }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            if (data.definitions && data.definitions[0]?.definition) {
-              definitions.push({
-                definition: data.definitions[0].definition,
-                partOfSpeech: data.definitions[0].partOfSpeech || '',
-                source: 'WordsAPI'
-              });
-            }
-          }
-        } catch (error) {
-          console.log('WordsAPI failed:', error);
-        }
-      }
-
-      // Enhanced fallback: Try different word forms
-      if (definitions.length === 0) {
-        const wordVariants = [
-          word.replace(/s$/, ''), // Remove plural 's'
-          word.replace(/ed$/, ''), // Remove past tense 'ed'
-          word.replace(/ing$/, ''), // Remove present participle 'ing'
-          word.replace(/ly$/, ''), // Remove adverb 'ly'
-        ].filter(variant => variant !== word && variant.length > 2);
-
-        for (const variant of wordVariants) {
-          try {
-            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${language}/${variant}`);
-            if (response.ok) {
-              const data = await response.json();
-              if (data[0]?.meanings?.[0]?.definitions?.[0]?.definition) {
-                definitions.push({
-                  definition: `(${variant}) ${data[0].meanings[0].definitions[0].definition}`,
-                  partOfSpeech: data[0].meanings[0].partOfSpeech || '',
-                  source: 'Dictionary API (variant)'
-                });
-                break;
-              }
-            }
-          } catch (error) {
-            continue;
-          }
-        }
-      }
-
-      return definitions.length > 0 ? definitions[0] : null;
-    }
-
+    // Check guess
     async function checkGuess() {
+      console.log('Checking guess...');
+      
+      const t = getTranslations();
       const userInput = document.getElementById('guess').value.trim().toLowerCase();
       const correctWord = words[currentIndex].toLowerCase();
       const feedbackDiv = document.getElementById('feedback');
@@ -520,39 +414,25 @@
           userGuess: userInput,
           definition: '' 
         });
-        feedbackDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i><span class="correct">Correct!</span></div>';
+        feedbackDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i><span class="correct">${t.correct}</span></div>`;
       } else {
-        // Show loading state
-        feedbackDiv.innerHTML = `
-          <div class="alert alert-warning">
-            <i class="bi bi-hourglass-split me-2"></i>
-            Looking up definition for "<strong>${correctWord}</strong>"...
-          </div>
-        `;
+        // Show loading
+        feedbackDiv.innerHTML = `<div class="alert alert-warning"><i class="bi bi-hourglass-split me-2"></i>${t.loading} "<strong>${correctWord}</strong>"...</div>`;
 
         const definitionData = await getDefinition(correctWord, userData.language);
-        
-        let definitionText = 'Definition not available';
-        let partOfSpeech = '';
-        
-        if (definitionData) {
-          definitionText = definitionData.definition;
-          partOfSpeech = definitionData.partOfSpeech ? `(${definitionData.partOfSpeech})` : '';
-        }
         
         wordResults.push({ 
           word: correctWord, 
           status: 'NOT OK', 
-          userGuess: userInput || 'no guess',
-          definition: definitionText 
+          userGuess: userInput || t.noGuess,
+          definition: definitionData.definition 
         });
         
         feedbackDiv.innerHTML = `
           <div class="alert alert-danger">
             <i class="bi bi-x-circle me-2"></i>
-            Wrong! The word was: <span class='missed'>${correctWord}</span> ${partOfSpeech}<br>
-            <small class='definition'><strong>Definition:</strong> ${definitionText}</small>
-            ${definitionData?.source ? `<br><small class="text-muted">Source: ${definitionData.source}</small>` : ''}
+            ${t.wrong} <span class='missed'>${correctWord}</span><br>
+            <small class='definition'><strong>${t.definition}</strong> ${definitionData.definition}</small>
           </div>
         `;
       }
@@ -561,14 +441,17 @@
       updateProgress();
     }
 
+    // Next word
     function nextWord() {
+      const t = getTranslations();
+      
       // If user didn't guess, count as wrong
       if (currentIndex < words.length && !wordResults.some(r => r.word === words[currentIndex].toLowerCase())) {
         wordResults.push({ 
           word: words[currentIndex].toLowerCase(), 
           status: 'NOT OK', 
-          userGuess: 'skipped',
-          definition: 'Skipped by user' 
+          userGuess: t.skipped,
+          definition: t.skipped 
         });
         currentIndex++;
         updateProgress();
@@ -579,8 +462,10 @@
       showWord();
     }
 
+    // Show results
     function showResults() {
-      document.getElementById('flash').innerHTML = '<h3><i class="bi bi-flag-checkered me-2"></i>Session Complete!</h3>';
+      const t = getTranslations();
+      document.getElementById('flash').innerHTML = `<h3><i class="bi bi-flag-checkered me-2"></i>${t.sessionComplete}</h3>`;
       document.getElementById('results-container').style.display = 'block';
       
       const tableBody = document.getElementById('results-table-body');
@@ -612,8 +497,8 @@
       
       document.getElementById('feedback').innerHTML = `
         <div class="alert alert-info">
-          <h5><i class="bi bi-graph-up me-2"></i>Your Results</h5>
-          <p>You got <strong>${correctCount}</strong> out of <strong>${totalCount}</strong> words correct (${percentage}%)</p>
+          <h5><i class="bi bi-graph-up me-2"></i>${t.yourResults}</h5>
+          <p>${t.gotCorrect} <strong>${correctCount}</strong> ${t.outOf} <strong>${totalCount}</strong> ${t.wordsCorrect} (${percentage}%)</p>
         </div>
       `;
     }
@@ -625,10 +510,20 @@
       }
     });
 
-    // Initialize the game
-    initializeWords();
-    updateProgress();
-    showWord();
+    // Initialize game
+    console.log('Initializing game...');
+    
+    if (loadUserData()) {
+      console.log('User data loaded successfully');
+      updateLanguage();
+      initializeWords();
+      updateProgress();
+      showWord();
+    } else {
+      console.error('Failed to load user data');
+    }
+    
+    console.log('Script completed');
   </script>
 </body>
 </html>
