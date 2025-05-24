@@ -1,10 +1,27 @@
-<script>
+  <script>
     let words = [];
     let currentIndex = 0;
-    let userData = JSON.parse(localStorage.getItem('userData'));
-    let displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+    let userData = null;
+    let displayTime = 1500; // Default
     let wordResults = [];
     let isShowingWord = false;
+
+    // Try to load user data from localStorage
+    try {
+      const storedData = localStorage.getItem('userData');
+      console.log('Raw stored data:', storedData);
+      
+      if (storedData) {
+        userData = JSON.parse(storedData);
+        console.log('Parsed user data:', userData);
+        displayTime = userData.confidence === 'low' ? 3000 : userData.confidence === 'medium' ? 1500 : 500;
+      } else {
+        console.error('No data found in localStorage');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      userData = null;
+    }
 
     // Language translations
     const translations = {
@@ -322,26 +339,50 @@
 
     // Initialize words based on user's struggle text
     function initializeWords() {
-      if (!userData || !userData.struggle) {
-        alert('No user data found. Please go back to the form.');
+      try {
+        if (!userData || !userData.struggle) {
+          console.error('No user data or struggle text found');
+          alert('No user data found. Please go back to the form.');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        console.log('Processing struggle text:', userData.struggle);
+        const meaningfulWords = filterMeaningfulWords(userData.struggle);
+        console.log('Meaningful words found:', meaningfulWords);
+        
+        if (meaningfulWords.length === 0) {
+          console.error('No meaningful words found in struggle text');
+          alert('No meaningful words found in your text. Please go back and add more details.');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        // Calculate number of words based on confidence level and 20% rule
+        const totalWordsCount = meaningfulWords.length;
+        const targetCount = Math.ceil(totalWordsCount * 0.2);
+        const maxWords = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
+        const finalCount = Math.min(targetCount, maxWords);
+
+        // Randomly select words
+        words = meaningfulWords
+          .sort(() => 0.5 - Math.random())
+          .slice(0, finalCount);
+
+        console.log(`Total meaningful words: ${totalWordsCount}, Selected: ${words.length}`);
+        console.log('Selected words:', words);
+        
+        if (words.length === 0) {
+          console.error('No words selected for game');
+          alert('Unable to generate words for the game. Please try again.');
+          window.location.href = 'index.html';
+          return;
+        }
+      } catch (error) {
+        console.error('Error in initializeWords:', error);
+        alert('Error processing your text. Please try again.');
         window.location.href = 'index.html';
-        return;
       }
-
-      const meaningfulWords = filterMeaningfulWords(userData.struggle);
-      
-      // Calculate number of words based on confidence level and 20% rule
-      const totalWordsCount = meaningfulWords.length;
-      const targetCount = Math.ceil(totalWordsCount * 0.2);
-      const maxWords = userData.confidence === 'low' ? 10 : userData.confidence === 'medium' ? 15 : 20;
-      const finalCount = Math.min(targetCount, maxWords);
-
-      // Randomly select words
-      words = meaningfulWords
-        .sort(() => 0.5 - Math.random())
-        .slice(0, finalCount);
-
-      console.log(`Total meaningful words: ${totalWordsCount}, Selected: ${words.length}`);
     }
 
     function updateProgress() {
